@@ -89,6 +89,7 @@
   font-size: var(--text-sm);
   transition: all var(--transition-fast);
   width: 100%;
+  color-scheme: dark;
 }
 
 .form-input:focus, .form-select:focus {
@@ -102,8 +103,8 @@
 }
 
 .form-select option {
-  background-color: var(--color-bg-secondary);
-  color: var(--color-text-primary);
+  background-color: #1a2735;
+  color: #e8edf2;
 }
 
 /* Cards (Glassmorphism) */

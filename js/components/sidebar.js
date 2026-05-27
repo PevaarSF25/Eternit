@@ -33,119 +33,35 @@ export function initSidebar() {
  */
 function renderSidebar(sidebar) {
     const menuItemsHtml = MENU_ITEMS.map(item => `
-        <a href="${item.hash}" class="sidebar-nav-item" data-hash="${item.hash}" style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 20px;
-            color: #8899aa;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 10px;
-            margin: 2px 12px;
-            transition: all 200ms ease;
-            position: relative;
-            overflow: hidden;
-            white-space: nowrap;
-        ">
-            <span class="nav-icon" style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 22px;
-                height: 22px;
-                flex-shrink: 0;
-            ">
-                <i data-lucide="${item.icon}" style="width:20px;height:20px;"></i>
+        <a href="${item.hash}" class="sidebar-nav-item" data-hash="${item.hash}" data-tooltip="${item.label}">
+            <span class="sidebar-nav-icon">
+                <i data-lucide="${item.icon}"></i>
             </span>
-            <span class="nav-label" style="transition: opacity 200ms ease;">${item.label}</span>
+            <span class="sidebar-nav-label">${item.label}</span>
         </a>
     `).join('');
 
     sidebar.innerHTML = `
-        <div class="sidebar-inner" style="
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        ">
-            <!-- Logo Section -->
-            <div class="sidebar-brand" style="
-                padding: 24px 20px 20px;
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-                margin-bottom: 8px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                overflow: hidden;
-                white-space: nowrap;
-            ">
-                <div class="brand-icon" style="
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 10px;
-                    background: linear-gradient(135deg, #00b4d8, #0077b6);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    font-size: 16px;
-                    font-weight: 800;
-                    color: #fff;
-                    letter-spacing: -0.5px;
-                ">E</div>
-                <div class="brand-text">
-                    <div style="
-                        font-size: 16px;
-                        font-weight: 700;
-                        color: #e0e6ed;
-                        letter-spacing: 1.5px;
-                        line-height: 1.2;
-                    ">ETERNIT</div>
-                    <div style="
-                        font-size: 11px;
-                        color: #5a6a7a;
-                        font-weight: 400;
-                    ">HSE Manager</div>
-                </div>
+        <!-- Logo Section -->
+        <div class="sidebar-header">
+            <div class="sidebar-logo">E</div>
+            <div class="sidebar-brand">
+                <span class="sidebar-brand-name">ETERNIT</span>
+                <span class="sidebar-brand-sub">HSE Manager</span>
             </div>
+        </div>
 
-            <!-- Navigation -->
-            <nav class="sidebar-nav" style="
-                flex: 1;
-                padding: 8px 0;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            ">
-                ${menuItemsHtml}
-            </nav>
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            ${menuItemsHtml}
+        </nav>
 
-            <!-- Toggle Button -->
-            <div class="sidebar-footer" style="
-                padding: 16px;
-                border-top: 1px solid rgba(255,255,255,0.06);
-            ">
-                <button id="sidebar-toggle" style="
-                    width: 100%;
-                    padding: 10px;
-                    border-radius: 8px;
-                    border: 1px solid rgba(255,255,255,0.08);
-                    background: rgba(255,255,255,0.03);
-                    color: #8899aa;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                    font-size: 13px;
-                    font-family: 'Inter', sans-serif;
-                    transition: all 200ms;
-                ">
-                    <i data-lucide="chevrons-left" id="toggle-icon" style="width:18px;height:18px;transition:transform 300ms;"></i>
-                    <span class="toggle-label" style="transition: opacity 200ms;">Colapsar</span>
-                </button>
-            </div>
+        <!-- Toggle Button -->
+        <div class="sidebar-footer">
+            <button id="sidebar-toggle" class="sidebar-toggle">
+                <i data-lucide="chevrons-left" class="sidebar-toggle-icon" id="toggle-icon"></i>
+                <span class="sidebar-toggle-label">Cerrar</span>
+            </button>
         </div>
     `;
 
@@ -164,18 +80,7 @@ function attachEvents(sidebar) {
         const toggleBtn = e.target.closest('#sidebar-toggle');
         if (toggleBtn) {
             isCollapsed = !isCollapsed;
-            document.body.classList.toggle('sidebar-collapsed', isCollapsed);
-
-            const icon = document.getElementById('toggle-icon');
-            if (icon) {
-                icon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
-            }
-
-            // Update toggle label
-            const toggleLabel = sidebar.querySelector('.toggle-label');
-            if (toggleLabel) {
-                toggleLabel.textContent = isCollapsed ? '' : 'Colapsar';
-            }
+            document.body.classList.toggle('collapsed', isCollapsed);
         }
     });
 
@@ -200,15 +105,9 @@ export function updateActiveNav(hash) {
         const isActive = itemHash === hash;
 
         if (isActive) {
-            item.style.background = 'rgba(0, 180, 216, 0.1)';
-            item.style.color = '#00b4d8';
-            item.style.borderLeft = '3px solid #00b4d8';
-            item.style.paddingLeft = '17px';
+            item.classList.add('active');
         } else {
-            item.style.background = 'transparent';
-            item.style.color = '#8899aa';
-            item.style.borderLeft = '3px solid transparent';
-            item.style.paddingLeft = '17px';
+            item.classList.remove('active');
         }
     });
 }

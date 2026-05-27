@@ -13,8 +13,8 @@
 // ─────────────────────────────────────────────────────────
 //  CONFIGURACIÓN — Reemplazar con tus credenciales reales
 // ─────────────────────────────────────────────────────────
-const SUPABASE_URL = 'TU_SUPABASE_URL_AQUI';           // <- El usuario reemplaza esto
-const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY_AQUI'; // <- El usuario reemplaza esto
+const SUPABASE_URL = 'https://zpnkomiwxnuchxmpmlwo.supabase.co';           
+const SUPABASE_ANON_KEY = 'sb_publishable_zO66AC8Yu6TaXYv4mCvf_w_No2KRPn_'; 
 
 /** @type {import('@supabase/supabase-js').SupabaseClient | null} */
 let supabaseInstance = null;
