@@ -1,0 +1,157 @@
+/* ============================================================
+   ETERNIT HSE — Design Tokens (variables.css)
+   Premium dark-theme dashboard variables
+   ============================================================ */
+
+:root {
+  /* ── Color Palette ──────────────────────────────────────── */
+
+  /* Backgrounds (dark → light) */
+  --bg-deepest:       #0a1017;
+  --bg-base:          #0f1923;
+  --bg-surface:       #1a2735;
+  --bg-elevated:      #243447;
+  --bg-hover:         #2c3e54;
+  --bg-card:          rgba(26, 39, 53, 0.65);
+  --bg-card-solid:    #1a2735;
+  --bg-input:         #0f1923;
+  --bg-overlay:       rgba(10, 16, 23, 0.72);
+
+  /* Accent — teal / cyan */
+  --accent:           #00b4d8;
+  --accent-light:     #48cae4;
+  --accent-lighter:   #90e0ef;
+  --accent-dark:      #0096b7;
+  --accent-bg:        rgba(0, 180, 216, 0.12);
+  --accent-glow:      rgba(0, 180, 216, 0.35);
+
+  /* Semantic */
+  --success:          #06d6a0;
+  --success-bg:       rgba(6, 214, 160, 0.12);
+  --success-dark:     #05b384;
+
+  --warning:          #ffd166;
+  --warning-bg:       rgba(255, 209, 102, 0.12);
+  --warning-dark:     #e6b84d;
+
+  --danger:           #ef476f;
+  --danger-bg:        rgba(239, 71, 111, 0.12);
+  --danger-dark:      #d63461;
+
+  --info:             #7b8cff;
+  --info-bg:          rgba(123, 140, 255, 0.12);
+
+  /* Text */
+  --text-primary:     #e8edf2;
+  --text-secondary:   #8899aa;
+  --text-muted:       #5c7080;
+  --text-inverse:     #0f1923;
+  --text-accent:      #48cae4;
+
+  /* Borders */
+  --border-default:   rgba(136, 153, 170, 0.15);
+  --border-light:     rgba(136, 153, 170, 0.08);
+  --border-focus:     rgba(0, 180, 216, 0.5);
+  --border-card:      rgba(136, 153, 170, 0.10);
+
+  /* Gradients */
+  --gradient-accent:  linear-gradient(135deg, #00b4d8 0%, #48cae4 100%);
+  --gradient-danger:  linear-gradient(135deg, #ef476f 0%, #f4778d 100%);
+  --gradient-success: linear-gradient(135deg, #06d6a0 0%, #34e4b8 100%);
+  --gradient-warning: linear-gradient(135deg, #ffd166 0%, #ffe08a 100%);
+  --gradient-dark:    linear-gradient(180deg, #1a2735 0%, #0f1923 100%);
+  --gradient-card:    linear-gradient(160deg,
+                        rgba(36, 52, 71, 0.55) 0%,
+                        rgba(26, 39, 53, 0.35) 100%);
+
+  /* ── Spacing (4 px base) ────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;      /*  4 */
+  --space-2:  8px;      /*  8 */
+  --space-3:  12px;     /* 12 */
+  --space-4:  16px;     /* 16 */
+  --space-5:  20px;     /* 20 */
+  --space-6:  24px;     /* 24 */
+  --space-7:  32px;     /* 32 */
+  --space-8:  40px;     /* 40 */
+  --space-9:  48px;     /* 48 */
+  --space-10: 56px;     /* 56 */
+  --space-11: 64px;     /* 64 */
+  --space-12: 80px;     /* 80 */
+
+  /* ── Border Radius ──────────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 50%;
+  --radius-pill: 9999px;
+
+  /* ── Shadows ────────────────────────────────────────────── */
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.25),
+                 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.30),
+                 0 2px 4px rgba(0, 0, 0, 0.20);
+  --shadow-lg:   0 10px 30px rgba(0, 0, 0, 0.40),
+                 0 4px 10px rgba(0, 0, 0, 0.25);
+  --shadow-xl:   0 20px 50px rgba(0, 0, 0, 0.50),
+                 0 8px 20px rgba(0, 0, 0, 0.30);
+  --shadow-glow: 0 0 20px var(--accent-glow),
+                 0 0 40px rgba(0, 180, 216, 0.12);
+  --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.25);
+
+  /* ── Transitions ────────────────────────────────────────── */
+  --transition-fast:  0.15s ease;
+  --transition-base:  0.3s ease;
+  --transition-slow:  0.5s ease;
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Typography ─────────────────────────────────────────── */
+  --font-family:     'Inter', -apple-system, BlinkMacSystemFont,
+                     'Segoe UI', Roboto, sans-serif;
+  --font-mono:       'JetBrains Mono', 'Fira Code', 'Cascadia Code',
+                     monospace;
+
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.8125rem;  /* 13px */
+  --text-base: 0.875rem;   /* 14px */
+  --text-md:   1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3rem;       /* 48px */
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  --sidebar-width:          260px;
+  --sidebar-width-collapsed: 70px;
+  --header-height:          64px;
+  --content-max-width:      1440px;
+
+  /* ── Z-Index Layers ─────────────────────────────────────── */
+  --z-base:     1;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-sidebar:  300;
+  --z-header:   400;
+  --z-overlay:  500;
+  --z-modal:    600;
+  --z-toast:    700;
+  --z-tooltip:  800;
+
+  /* ── Misc ───────────────────────────────────────────────── */
+  --blur-sm:  8px;
+  --blur-md:  16px;
+  --blur-lg:  24px;
+}

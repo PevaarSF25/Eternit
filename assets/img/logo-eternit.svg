@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" fill="none">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00b4d8"/>
+      <stop offset="100%" style="stop-color:#48cae4"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield Icon -->
+  <path d="M10 8 L25 4 L40 8 L40 24 C40 32 25 40 25 40 C25 40 10 32 10 24 Z" fill="url(#logoGrad)" opacity="0.9"/>
+  <path d="M20 18 L23 22 L31 14" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Text -->
+  <text x="50" y="20" font-family="Inter, sans-serif" font-weight="800" font-size="18" fill="#e8edf2" letter-spacing="2">ETERNIT</text>
+  <text x="50" y="36" font-family="Inter, sans-serif" font-weight="400" font-size="11" fill="#00b4d8" letter-spacing="4">HSE MANAGER</text>
+</svg>
