@@ -27,18 +27,19 @@ function getOrCreateContainer() {
     if (!container) {
         container = document.createElement('div');
         container.className = 'toast-container';
-        Object.assign(container.style, {
-            position: 'fixed',
-            top: '80px',
-            right: '24px',
-            zIndex: '9999',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            pointerEvents: 'none'
-        });
         document.body.appendChild(container);
     }
+    // Always apply styling to ensure correct fixed positioning at top-right
+    Object.assign(container.style, {
+        position: 'fixed',
+        top: '24px',
+        right: '24px',
+        zIndex: '9999',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        pointerEvents: 'none'
+    });
     return container;
 }
 
@@ -62,7 +63,7 @@ export function showToast(message, type = 'info') {
         borderRadius: '10px',
         background: colors.bg,
         border: `1px solid ${colors.border}`,
-        color: '#e0e6ed',
+        color: '#ffffff',
         fontSize: '14px',
         fontFamily: "'Inter', sans-serif",
         minWidth: '280px',

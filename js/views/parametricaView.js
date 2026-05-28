@@ -4,7 +4,10 @@ import { showConfirmModal } from '../components/modal.js';
 
 let currentState = {
   ciudad: [],
-  contratista: []
+  contratista: [],
+  mes: [],
+  anio: [],
+  empresa: []
 };
 
 export async function renderParametricas(container) {
@@ -18,6 +21,9 @@ export async function renderParametricas(container) {
         <div class="param-tabs">
           <button class="param-tab active" data-tab="ciudad">Ciudad (Planta)</button>
           <button class="param-tab" data-tab="contratista">Tipo de Contratista</button>
+          <button class="param-tab" data-tab="mes">Mes</button>
+          <button class="param-tab" data-tab="anio">Año</button>
+          <button class="param-tab" data-tab="empresa">Empresa</button>
         </div>
 
         <!-- Tab Content: Ciudad -->
@@ -45,6 +51,54 @@ export async function renderParametricas(container) {
           <form class="param-add" id="form-add-contratista">
             <div class="form-group">
               <input type="text" class="form-input" id="input-new-contratista" placeholder="Ej. Temporal, Subcontrato..." required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="plus"></i> Agregar
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab Content: Mes -->
+        <div class="param-content" id="tab-mes">
+          <p class="form-label" style="margin-bottom: var(--space-4);">Administre los meses disponibles (ej. Enero, Febrero).</p>
+          <div class="param-chips" id="chips-mes">
+            <div class="spinner"></div>
+          </div>
+          <form class="param-add" id="form-add-mes">
+            <div class="form-group">
+              <input type="text" class="form-input" id="input-new-mes" placeholder="Ej. Enero..." required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="plus"></i> Agregar
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab Content: Año -->
+        <div class="param-content" id="tab-anio">
+          <p class="form-label" style="margin-bottom: var(--space-4);">Administre los años disponibles (ej. 2026).</p>
+          <div class="param-chips" id="chips-anio">
+            <div class="spinner"></div>
+          </div>
+          <form class="param-add" id="form-add-anio">
+            <div class="form-group">
+              <input type="number" class="form-input" id="input-new-anio" placeholder="Ej. 2026" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="plus"></i> Agregar
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab Content: Empresa -->
+        <div class="param-content" id="tab-empresa">
+          <p class="form-label" style="margin-bottom: var(--space-4);">Administre las empresas contratistas disponibles para el registro.</p>
+          <div class="param-chips" id="chips-empresa">
+            <div class="spinner"></div>
+          </div>
+          <form class="param-add" id="form-add-empresa">
+            <div class="form-group">
+              <input type="text" class="form-input" id="input-new-empresa" placeholder="Ej. Constructora ABC, Seguridad XYZ..." required>
             </div>
             <button type="submit" class="btn btn-primary">
               <i data-lucide="plus"></i> Agregar
@@ -97,6 +151,9 @@ export async function renderParametricas(container) {
   // Setup Forms
   const formCiudad = container.querySelector('#form-add-ciudad');
   const formContratista = container.querySelector('#form-add-contratista');
+  const formMes = container.querySelector('#form-add-mes');
+  const formAnio = container.querySelector('#form-add-anio');
+  const formEmpresa = container.querySelector('#form-add-empresa');
 
   formCiudad.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -110,18 +167,45 @@ export async function renderParametricas(container) {
     await handleAdd('contratista', input.value.trim(), input);
   });
 
+  formMes.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = container.querySelector('#input-new-mes');
+    await handleAdd('mes', input.value.trim(), input);
+  });
+
+  formAnio.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = container.querySelector('#input-new-anio');
+    await handleAdd('anio', input.value.trim(), input);
+  });
+
+  formEmpresa.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = container.querySelector('#input-new-empresa');
+    await handleAdd('empresa', input.value.trim(), input);
+  });
+
   async function loadData() {
     try {
-      const [ciudades, contratistas] = await Promise.all([
+      const [ciudades, contratistas, meses, anios, empresas] = await Promise.all([
         getParametros('ciudad'),
-        getParametros('contratista')
+        getParametros('contratista'),
+        getParametros('mes'),
+        getParametros('anio'),
+        getParametros('empresa')
       ]);
       
       currentState.ciudad = ciudades.data || [];
       currentState.contratista = contratistas.data || [];
+      currentState.mes = meses.data || [];
+      currentState.anio = anios.data || [];
+      currentState.empresa = empresas.data || [];
 
       renderChips('ciudad');
       renderChips('contratista');
+      renderChips('mes');
+      renderChips('anio');
+      renderChips('empresa');
     } catch (error) {
       showToast('Error cargando parámetros', 'error');
     }

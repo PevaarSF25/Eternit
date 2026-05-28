@@ -14,7 +14,7 @@
 //  CONFIGURACIÓN — Reemplazar con tus credenciales reales
 // ─────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://zpnkomiwxnuchxmpmlwo.supabase.co';           
-const SUPABASE_ANON_KEY = 'sb_publishable_zO66AC8Yu6TaXYv4mCvf_w_No2KRPn_'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwbmtvbWl3eG51Y2h4bXBtbHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NzI4NTQsImV4cCI6MjA5NTQ0ODg1NH0.4m8Jit7qxncziBoA-wFaRJn7EujKk1AyYF09O8LoJnQ'; 
 
 /** @type {import('@supabase/supabase-js').SupabaseClient | null} */
 let supabaseInstance = null;

@@ -97,6 +97,20 @@ export function calcularLTIF(lti, hht) {
 }
 
 /**
+ * Calcula la sumatoria de incidentes TIRF.
+ * 
+ * Fórmula: MTI + MWD + LTI
+ * 
+ * @param {number} mti — Medical Treatment Incidents
+ * @param {number} mwd — Modified Work Days
+ * @param {number} lti — Lost Time Incidents
+ * @returns {number} Total de Incidentes TIRF
+ */
+export function calcularIncidenteTIRF(mti, mwd, lti) {
+    return round(mti + mwd + lti);
+}
+
+/**
  * Calcula el Total Incident Rate Frequency (TIRF).
  * 
  * Fórmula: ((MTI + MWD + LTI) × 200 000) / HHT
@@ -155,14 +169,14 @@ export function calcularSeveridadAccidentalidad(diasIncapacidadAT, diasCargados,
 /**
  * Calcula el porcentaje de Proporción de Mortalidad.
  * 
- * Fórmula: (Fatalidad / N° Trabajadores) × 100
+ * Fórmula: (Fatalidad / Total de incidentes) * 100
  * 
  * @param {number} fatalidad       — Número de fatalidades
- * @param {number} numTrabajadores — Número de trabajadores
- * @returns {number} Porcentaje redondeado a 2 decimales; 0 si numTrabajadores es 0
+ * @param {number} totalIncidentes — Total de incidentes
+ * @returns {number} Porcentaje redondeado a 2 decimales; 0 si totalIncidentes es 0
  */
-export function calcularProporcionMortalidad(fatalidad, numTrabajadores) {
-    return round(safeDivide(fatalidad, numTrabajadores) * CONSTANTE_NORMATIVIDAD_CO);
+export function calcularProporcionMortalidad(fatalidad, totalIncidentes) {
+    return round(safeDivide(fatalidad, totalIncidentes) * CONSTANTE_NORMATIVIDAD_CO);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -186,7 +200,8 @@ export function calcularProporcionMortalidad(fatalidad, numTrabajadores) {
  * @param {number} data.hht
  * @param {number} data.num_trabajadores
  * @param {number} data.fatalidad
- * @param {number} data.dias_incapacidad_at
+ * @param {number} data.dias_incapacidad_at_elementia
+ * @param {number} data.dias_incapacidad_at_ley
  * @param {number} data.dias_cargados
  * @returns {Object} Objeto con los campos calculados:
  *   incidentes_lesiones, total_incidentes, ltif, tirf, sr,
@@ -207,17 +222,20 @@ export function calcularTodosLosIndicadores(data) {
     const hht = Number(data.hht) || 0;
     const numTrabajadores    = Number(data.num_trabajadores)    || 0;
     const fatalidad          = Number(data.fatalidad)           || 0;
-    const diasIncapacidadAT  = Number(data.dias_incapacidad_at) || 0;
+    const diasIncapacidadAT  = (Number(data.dias_incapacidad_at_elementia) || 0) + (Number(data.dias_incapacidad_at_ley) || 0);
     const diasCargados       = Number(data.dias_cargados)       || 0;
+
+    const total_incidentes = calcularTotalIncidentes(dp, nm, fai, mti, mwd, lti);
 
     return {
         incidentes_lesiones:       calcularIncidentesLesiones(fai, mti, mwd, lti),
-        total_incidentes:          calcularTotalIncidentes(dp, nm, fai, mti, mwd, lti),
+        incidente_tirf:            calcularIncidenteTIRF(mti, mwd, lti),
+        total_incidentes:          total_incidentes,
         ltif:                      calcularLTIF(lti, hht),
         tirf:                      calcularTIRF(mti, mwd, lti, hht),
         sr:                        calcularSR(diasIncapacidadAT, diasCargados, hht),
         frecuencia_accidentalidad: calcularFrecuenciaAccidentalidad(lti, numTrabajadores),
         severidad_accidentalidad:  calcularSeveridadAccidentalidad(diasIncapacidadAT, diasCargados, numTrabajadores),
-        proporcion_mortalidad:     calcularProporcionMortalidad(fatalidad, numTrabajadores),
+        proporcion_mortalidad:     calcularProporcionMortalidad(fatalidad, total_incidentes),
     };
 }

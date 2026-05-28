@@ -11,6 +11,7 @@
  * @param {Array<Object>} options.data - Row data
  * @param {Function} [options.onEdit] - Callback when edit button clicked, receives row data
  * @param {Function} [options.onDelete] - Callback when delete button clicked, receives row data
+ * @param {Object} [options.footerRow] - Optional data for a summary/footer row
  * @param {string} [options.emptyMessage='No hay registros disponibles'] - Message when no data
  * @returns {{ update: Function, destroy: Function }}
  */
@@ -20,6 +21,7 @@ export function createDataTable({
     data = [],
     onEdit,
     onDelete,
+    footerRow = null,
     emptyMessage = 'No hay registros disponibles'
 }) {
     const container = document.getElementById(containerId);
@@ -163,11 +165,36 @@ export function createDataTable({
             return `<tr style="transition: background 200ms;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">${cells}${actions}</tr>`;
         }).join('');
 
+        let tfootHtml = '';
+        if (footerRow && currentData.length > 0) {
+            const footerCells = columns.map(col => {
+                let value = footerRow[col.key];
+                if (col.format && value !== undefined && value !== null) {
+                    value = col.format(value, footerRow);
+                }
+                return `<td style="
+                    padding: 12px 16px;
+                    font-weight: 700;
+                    color: var(--color-text-primary, #fff);
+                    font-size: 13px;
+                    white-space: nowrap;
+                ">${value ?? '—'}</td>`;
+            }).join('');
+            
+            const emptyActionCell = (onEdit || onDelete) ? `<td></td>` : '';
+            tfootHtml = `
+                <tfoot style="background: rgba(0, 180, 216, 0.1); border-top: 2px solid rgba(0, 180, 216, 0.3);">
+                    <tr>${footerCells}${emptyActionCell}</tr>
+                </tfoot>
+            `;
+        }
+
         container.innerHTML = `
             <div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.06);">
                 <table style="width:100%;border-collapse:collapse;font-family:'Inter',sans-serif;">
                     <thead><tr>${headerCells}${actionHeader}</tr></thead>
                     <tbody>${rows}</tbody>
+                    ${tfootHtml}
                 </table>
             </div>
         `;
@@ -205,9 +232,13 @@ export function createDataTable({
         /**
          * Updates the table with new data.
          * @param {Array<Object>} newData
+         * @param {Object} [newFooterRow]
          */
-        update(newData) {
+        update(newData, newFooterRow = null) {
             currentData = [...newData];
+            if (newFooterRow !== null) {
+                footerRow = newFooterRow;
+            }
             if (sortKey) {
                 currentData.sort((a, b) => {
                     const valA = a[sortKey] ?? '';

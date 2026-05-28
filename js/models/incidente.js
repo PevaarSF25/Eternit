@@ -11,14 +11,14 @@
 //  Meses en español
 // ─────────────────────────────────────────────────────────
 
-/** Lista ordenada de meses del año en español */
+/** Lista ordenada de meses del año en español para uso en ordenamientos lógicos */
 export const MESES = [
     'Enero', 'Febrero', 'Marzo', 'Abril',
     'Mayo', 'Junio', 'Julio', 'Agosto',
     'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-/** Tipos de trabajador válidos */
+/** Tipos de trabajador válidos - base, aunque ahora puede ser paramétrico */
 export const TIPOS_TRABAJADOR = ['Directo', 'Contratista'];
 
 // ─────────────────────────────────────────────────────────
@@ -38,27 +38,34 @@ export const TIPOS_TRABAJADOR = ['Directo', 'Contratista'];
 export const FIELD_DEFINITIONS = [
     // ── Campos de contexto ──
     { key: 'tipo',                    label: 'Tipo',                                                type: 'select',  calculated: false, default: 'Directo' },
-    { key: 'anio',                    label: 'Año',                                                 type: 'integer', calculated: false, default: new Date().getFullYear() },
+    { key: 'planta',                  label: 'Planta',                                              type: 'select',  calculated: false, default: '' },
+    { key: 'empresa',                 label: 'Empresa',                                             type: 'select',  calculated: false, default: '' },
+    { key: 'anio',                    label: 'Año',                                                 type: 'select',  calculated: false, default: '' },
     { key: 'mes',                     label: 'Mes',                                                 type: 'select',  calculated: false, default: '' },
 
     // ── Campos de entrada numérica ──
-    { key: 'num_trabajadores',        label: 'N° Trabajadores',                                     type: 'integer', calculated: false, default: 0 },
-    { key: 'hht',                     label: 'HHT - Horas hombres de trabajo',                      type: 'numeric', calculated: false, default: 0 },
-    { key: 'dp',                      label: 'N° DP - Daños a la propiedad',                        type: 'integer', calculated: false, default: 0 },
-    { key: 'nm',                      label: 'N° NM - Near miss (Casi accidente)',                   type: 'integer', calculated: false, default: 0 },
-    { key: 'fai',                     label: 'N° FAI - Lesión con primeros auxilios',                type: 'integer', calculated: false, default: 0 },
-    { key: 'mti',                     label: 'N° MTI - Lesión con tratamiento médico',               type: 'integer', calculated: false, default: 0 },
-    { key: 'mwd',                     label: 'N° MWD - Restricciones médicas',                      type: 'integer', calculated: false, default: 0 },
-    { key: 'lti',                     label: 'N° LTI - Lesión con tiempo perdido (incapacitante)',   type: 'integer', calculated: false, default: 0 },
-    { key: 'fatalidad',              label: 'N° Fatalidad',                                         type: 'integer', calculated: false, default: 0 },
-    { key: 'dias_incapacidad_at',    label: 'N° Días Incapacitados x AT',                           type: 'integer', calculated: false, default: 0 },
-    { key: 'dias_cargados',          label: 'N° Cargados',                                          type: 'integer', calculated: false, default: 0 },
-    { key: 'casos_eg',               label: 'N° Casos EG',                                          type: 'integer', calculated: false, default: 0 },
-    { key: 'incapacidad_eg',         label: 'N° Incapacidad EG',                                    type: 'integer', calculated: false, default: 0 },
-    { key: 'casos_el',               label: 'N° Casos EL',                                          type: 'integer', calculated: false, default: 0 },
+    { key: 'num_trabajadores',        label: 'N° Trabajadores',                                     type: 'integer', calculated: false, default: '' },
+    { key: 'hht',                     label: 'HHT - Horas hombres de trabajo',                      type: 'numeric', calculated: false, default: '' },
+    { key: 'dp',                      label: 'N° DP - Daños a la propiedad',                        type: 'integer', calculated: false, default: '' },
+    { key: 'nm',                      label: 'N° NM - Near miss (Casi accidente)',                   type: 'integer', calculated: false, default: '' },
+    { key: 'fai',                     label: 'N° FAI - Lesión con primeros auxilios',                type: 'integer', calculated: false, default: '' },
+    { key: 'mti',                     label: 'N° MTI - Lesión con tratamiento médico',               type: 'integer', calculated: false, default: '' },
+    { key: 'mwd',                     label: 'N° MWD - Restricciones médicas',                      type: 'integer', calculated: false, default: '' },
+    { key: 'lti',                     label: 'N° LTI - Lesión con tiempo perdido (incapacitante)',   type: 'integer', calculated: false, default: '' },
+    { key: 'fatalidad',              label: 'N° Fatalidad',                                         type: 'integer', calculated: false, default: '' },
+    { key: 'dias_incapacidad_at_elementia', label: 'N° Días Incapacidad x AT (Elementia)',          type: 'integer', calculated: false, default: '' },
+    { key: 'dias_incapacidad_at_ley',       label: 'N° Días Incapacidad x AT (Ley)',                type: 'integer', calculated: false, default: '' },
+    { key: 'dias_cargados',          label: 'N° Cargados',                                          type: 'integer', calculated: false, default: '' },
+    { key: 'casos_eg',               label: 'N° Casos EG',                                          type: 'integer', calculated: false, default: '' },
+    { key: 'incapacidad_eg',         label: 'N° Incapacidad EG',                                    type: 'integer', calculated: false, default: '' },
+    { key: 'casos_el',               label: 'N° Casos EL',                                          type: 'integer', calculated: false, default: '' },
+
+    // ── Campo especial para comentarios ──
+    { key: 'comentarios',            label: 'Comentarios',                                          type: 'json',    calculated: false, default: {} },
 
     // ── Campos calculados ──
     { key: 'incidentes_lesiones',    label: 'N° Incidentes Lesiones (FAI, MTI, MWD, LTI)',           type: 'numeric', calculated: true,  default: 0 },
+    { key: 'incidente_tirf',         label: 'N° Incidente TIRF (MTI, MWD, LTI)',                     type: 'numeric', calculated: true,  default: 0 },
     { key: 'total_incidentes',       label: 'N° Total Incidentes (Incluye DP, NM)',                  type: 'numeric', calculated: true,  default: 0 },
     { key: 'ltif',                    label: 'LTIF',                                                type: 'numeric', calculated: true,  default: 0 },
     { key: 'tirf',                    label: 'TIRF',                                                type: 'numeric', calculated: true,  default: 0 },

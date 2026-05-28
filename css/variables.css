@@ -154,4 +154,21 @@
   --blur-sm:  8px;
   --blur-md:  16px;
   --blur-lg:  24px;
+
+  /* ── Compatibility Aliases (maps --color-* variables to design tokens) ── */
+  --color-bg-primary:     var(--bg-deepest);
+  --color-bg-secondary:   var(--bg-base);
+  --color-bg-tertiary:    var(--bg-surface);
+  --color-border:         var(--border-default);
+  --color-border-light:   var(--border-light);
+  --color-text-primary:   var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-muted);
+  --color-accent-primary: var(--accent);
+  --color-accent-secondary: var(--accent-light);
+  --color-accent-hover:   var(--accent-glow);
+  --color-success:        var(--success);
+  --color-warning:        var(--warning);
+  --color-danger:         var(--danger);
+  --color-info:           var(--info);
 }
