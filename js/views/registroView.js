@@ -2,7 +2,7 @@ import { getAllRegistros, createRegistro, updateRegistro, deleteRegistro } from 
 import { calcularTodosLosIndicadores } from '../services/calculoService.js';
 import { getParametros } from '../services/parametricaService.js';
 import { showToast } from '../components/toast.js';
-import { showConfirmModal } from '../components/modal.js';
+import { showModal, showConfirmModal } from '../components/modal.js';
 import { createDataTable } from '../components/dataTable.js';
 import { MESES, INPUT_FIELDS, CALCULATED_FIELDS, crearRegistroVacio, getFieldDefinition } from '../models/incidente.js';
 import { formatNumber, formatPercent } from '../utils/formatter.js';
@@ -17,13 +17,6 @@ export async function renderRegistro(container) {
     <div class="registro-container">
       <div class="registro-header">
         <h2>Registro de Datos SST</h2>
-        <div class="tipo-selector-container">
-          <div class="segmented-control" id="tipo-registro-toggle">
-            <button type="button" class="control-btn active" data-value="Directo">Data Directo</button>
-            <button type="button" class="control-btn" data-value="Contratista">Data Contratista</button>
-          </div>
-          <input type="hidden" id="tipo-select" value="Directo">
-        </div>
       </div>
 
       <div class="registro-form">
@@ -34,6 +27,13 @@ export async function renderRegistro(container) {
             <div class="card form-section" style="margin-bottom:var(--space-6)">
               <h3 class="form-section-title">1. Información General</h3>
               <div class="form-grid">
+                <div class="form-group">
+                  <label for="tipo-select" class="form-label">Tipo de Registro</label>
+                  <select class="form-select" id="tipo-select" name="tipo_registro">
+                    <option value="Directo">Directo</option>
+                    <option value="Contratista">Contratista</option>
+                  </select>
+                </div>
                 ${renderSelect('planta', [])}
                 ${renderSelect('empresa', [])}
                 ${renderSelect('tipo', [])}
@@ -220,30 +220,15 @@ function handleTabChange(container, tabValue) {
 
 function bindEvents(container) {
   const form = container.querySelector('#registro-form');
-  const hiddenTipoInput = container.querySelector('#tipo-select');
-  const toggleContainer = container.querySelector('#tipo-registro-toggle');
+  const tipoSelect = container.querySelector('#tipo-select');
   const btnLimpiar = container.querySelector('#btn-limpiar');
   
-  // Sincronizar control de pestañas segmentadas
-  if (toggleContainer) {
-    const controlButtons = toggleContainer.querySelectorAll('.control-btn');
-    controlButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = btn.dataset.value;
-        
-        // Visual active state switch
-        controlButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        // Update hidden input
-        hiddenTipoInput.value = val;
-        
-        // Hide/show Tipo form group and set default value
-        handleTabChange(container, val);
-        
-        // Filter table dynamically based on active tab
-        refreshTable(container);
-      });
+  // Sincronizar select de tipo de registro
+  if (tipoSelect) {
+    tipoSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      handleTabChange(container, val);
+      refreshTable(container);
     });
   }
   
@@ -253,17 +238,7 @@ function bindEvents(container) {
     input.addEventListener('input', () => updateCalculatedFields(container));
   });
   
-  // Sincronizar campo tipo en Información General con el hidden input
-  const inputTipo = container.querySelector('#input-tipo');
-  if (inputTipo) {
-    inputTipo.addEventListener('change', () => {
-      const activeTabBtn = container.querySelector('#tipo-registro-toggle .control-btn.active');
-      const activeTabVal = activeTabBtn ? activeTabBtn.dataset.value : 'Directo';
-      if (activeTabVal === 'Contratista') {
-        hiddenTipoInput.value = inputTipo.value;
-      }
-    });
-  }
+
 
   // Comentarios
   const btnComments = container.querySelectorAll('.btn-comment');
@@ -271,16 +246,31 @@ function bindEvents(container) {
     btn.addEventListener('click', () => {
       const key = btn.dataset.key;
       const currentText = currentComments[key] || '';
-      const text = window.prompt(`Comentario para ${getFieldDefinition(key).label}:`, currentText);
-      if (text !== null) {
-        if (text.trim() === '') {
-          delete currentComments[key];
-          btn.style.color = 'var(--color-text-secondary)';
-        } else {
-          currentComments[key] = text.trim();
-          btn.style.color = 'var(--color-danger)';
+      
+      showModal({
+        title: `Comentario para ${getFieldDefinition(key).label}`,
+        content: `
+          <div style="margin:0;">
+            <textarea id="comment-textarea" class="form-input" style="width:100%; min-height:100px; resize:vertical; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px; border-radius: 8px; font-family: inherit; font-size: 14px;" placeholder="Escribe un comentario aquí...">${currentText}</textarea>
+          </div>
+        `,
+        confirmText: 'Guardar',
+        cancelText: 'Cancelar'
+      }).then((confirmed) => {
+        if (confirmed) {
+          const textarea = document.getElementById('comment-textarea');
+          const text = textarea ? textarea.value : '';
+          if (text.trim() === '') {
+            delete currentComments[key];
+            btn.style.color = 'var(--color-text-secondary)';
+          } else {
+            currentComments[key] = text.trim();
+            btn.style.color = 'var(--color-danger)';
+          }
+          // Actualizar los campos calculados para reflejar cambios
+          updateCalculatedFields(container);
         }
-      }
+      });
     });
   });
 
@@ -297,8 +287,8 @@ function bindEvents(container) {
 function getFormData(container) {
   const data = crearRegistroVacio();
   
-  const activeTabBtn = container.querySelector('#tipo-registro-toggle .control-btn.active');
-  const activeTabVal = activeTabBtn ? activeTabBtn.dataset.value : 'Directo';
+  const tipoSelect = container.querySelector('#tipo-select');
+  const activeTabVal = tipoSelect ? tipoSelect.value : 'Directo';
   
   if (activeTabVal === 'Contratista') {
     data.tipo = container.querySelector('#input-tipo').value || '';
@@ -376,10 +366,9 @@ function resetForm(container) {
   });
   
   // Sincronizar el formulario con el estado de la pestaña activa en la cabecera
-  const activeTabBtn = container.querySelector('#tipo-registro-toggle .control-btn.active');
-  const activeTabVal = activeTabBtn ? activeTabBtn.dataset.value : 'Directo';
+  const tipoSelect = container.querySelector('#tipo-select');
+  const activeTabVal = tipoSelect ? tipoSelect.value : 'Directo';
   
-  container.querySelector('#tipo-select').value = activeTabVal;
   handleTabChange(container, activeTabVal);
   
   container.querySelector('#btn-guardar').innerHTML = '<i data-lucide="save"></i> Guardar Registro';
@@ -434,18 +423,7 @@ async function refreshTable(container) {
     return;
   }
 
-  // Filtrar los datos en base a la pestaña activa en la cabecera
-  const activeTabBtn = container.querySelector('#tipo-registro-toggle .control-btn.active');
-  const activeTabVal = activeTabBtn ? activeTabBtn.dataset.value : 'Directo';
-  
-  const records = res.data || [];
-  const filteredRecords = records.filter(r => {
-    if (activeTabVal === 'Directo') {
-      return r.tipo === 'Directo';
-    } else {
-      return r.tipo !== 'Directo';
-    }
-  });
+  const filteredRecords = res.data || [];
 
   // Calculate Acumulado row
   const sumData = {
@@ -474,15 +452,13 @@ async function refreshTable(container) {
     ltif: sumIndicators.ltif
   };
 
-  // Columnas dinámicas según la pestaña activa
+  // Mostrar todas las columnas para que todos los registros (Directos y Contratistas) se visualicen juntos
   const columns = [
     { key: 'anio', label: 'Año' },
     { key: 'mes', label: 'Mes' },
     { key: 'tipo', label: 'Tipo' },
-    ...(activeTabVal === 'Directo'
-      ? [{ key: 'planta', label: 'Planta' }]
-      : [{ key: 'empresa', label: 'Empresa' }]
-    ),
+    { key: 'planta', label: 'Planta', format: (v) => v || '-' },
+    { key: 'empresa', label: 'Empresa', format: (v) => v || '-' },
     { key: 'num_trabajadores', label: 'Trabajadores' },
     { key: 'hht', label: 'HHT', format: (v) => formatNumber(v, 0) },
     { key: 'total_incidentes', label: 'Total Inc.' },
@@ -520,20 +496,9 @@ function loadRecordIntoForm(container, record) {
   currentComments = record.comentarios || {};
   
   const isDirecto = (record.tipo === 'Directo');
-  const controlButtons = container.querySelectorAll('#tipo-registro-toggle .control-btn');
   
-  // Sincronizar visualmente el toggle
-  controlButtons.forEach(btn => {
-    const val = btn.dataset.value;
-    if ((isDirecto && val === 'Directo') || (!isDirecto && val === 'Contratista')) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-  
-  // Sincronizar el hidden input
-  container.querySelector('#tipo-select').value = record.tipo;
+  // Sincronizar el select
+  container.querySelector('#tipo-select').value = isDirecto ? 'Directo' : 'Contratista';
   
   // Sincronizar campos de Planta/Empresa
   handleTabChange(container, isDirecto ? 'Directo' : 'Contratista');

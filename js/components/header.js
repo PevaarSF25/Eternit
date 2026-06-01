@@ -35,51 +35,60 @@ function renderHeader(header) {
             align-items: center;
             justify-content: space-between;
             height: 100%;
-            padding: 0 32px;
+            padding: 0 var(--space-6);
         ">
-            <!-- Breadcrumb / Page Title -->
-            <div class="header-left" style="display:flex;align-items:center;gap:12px;">
-                <i data-lucide="home" style="width:16px;height:16px;color:#5a6a7a;"></i>
-                <span style="color:#5a6a7a;font-size:14px;">/</span>
-                <span id="header-breadcrumb" style="
-                    color: #e0e6ed;
-                    font-size: 15px;
-                    font-weight: 600;
-                ">Registro de Datos</span>
+            <!-- Left Side: Interactive Breadcrumb -->
+            <div class="header-left">
+                <a href="#dashboard" class="header-home-btn" title="Ir al Inicio">
+                    <i data-lucide="home"></i>
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <div class="breadcrumb-current-wrapper">
+                    <span id="header-breadcrumb" class="breadcrumb-current">Registro de Datos</span>
+                </div>
             </div>
 
-            <!-- Right Side: Clock + Badge -->
-            <div class="header-right" style="display:flex;align-items:center;gap:24px;">
-                <!-- Live Clock -->
-                <div id="header-clock" style="
-                    color: #8899aa;
-                    font-size: 13px;
-                    font-family: 'Inter', sans-serif;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                ">
-                    <i data-lucide="clock" style="width:15px;height:15px;"></i>
+            <!-- Right Side: Status HUD, Actions & Profile -->
+            <div class="header-right">
+                <!-- System Status HUD -->
+                <div class="hud-status">
+                    <span class="status-pulse-dot"></span>
+                    <span class="hud-label">SISTEMA ONLINE</span>
+                </div>
+
+                <!-- Interactive Clock Widget -->
+                <div id="header-clock" class="header-clock-widget">
+                    <i data-lucide="clock"></i>
                     <span id="clock-text">${formatDateTime(new Date())}</span>
                 </div>
 
-                <!-- App Badge -->
-                <div class="header-badge" style="
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 6px 14px;
-                    border-radius: 8px;
-                    background: rgba(0, 180, 216, 0.1);
-                    border: 1px solid rgba(0, 180, 216, 0.2);
-                ">
-                    <i data-lucide="shield-check" style="width:16px;height:16px;color:#00b4d8;"></i>
-                    <span style="
-                        color: #00b4d8;
-                        font-size: 13px;
-                        font-weight: 600;
-                        letter-spacing: 0.3px;
-                    ">Eternit HSE</span>
+                <div class="header-divider"></div>
+
+                <!-- Action Controls -->
+                <div class="header-actions">
+                    <button class="header-action-btn notification-btn" title="Notificaciones">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-indicator"></span>
+                    </button>
+                    <button class="header-action-btn settings-btn" title="Configuraciones Rápidas">
+                        <i data-lucide="sliders"></i>
+                    </button>
+                </div>
+
+                <div class="header-divider"></div>
+
+                <!-- Premium User Profile -->
+                <div class="header-user-profile">
+                    <div class="avatar-wrapper">
+                        <div class="avatar-ring"></div>
+                        <div class="avatar-img">SA</div>
+                        <span class="user-status-dot"></span>
+                    </div>
+                    <div class="user-meta">
+                        <span class="user-name">Super Admin</span>
+                        <span class="user-role">HSE Coordinator</span>
+                    </div>
+                    <i data-lucide="chevron-down" class="user-menu-chevron"></i>
                 </div>
             </div>
         </div>

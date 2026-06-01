@@ -173,6 +173,45 @@ export async function deleteParametro(id) {
 }
 
 /**
+ * Actualiza el valor de un parámetro existente por su UUID.
+ * 
+ * @param {string} id    — UUID del parámetro
+ * @param {string} valor — Nuevo valor del parámetro
+ * @returns {Promise<{data: Object|null, error: Error|null}>}
+ * 
+ * @example
+ * await updateParametro('uuid-aquí', 'Planta Cali');
+ */
+export async function updateParametro(id, valor) {
+    try {
+        if (!valor || !valor.trim()) {
+            return {
+                data: null,
+                error: new Error('El valor del parámetro no puede estar vacío.')
+            };
+        }
+
+        const sb = getSupabase();
+        const { data, error } = await sb
+            .from(TABLA)
+            .update({ valor: valor.trim() })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[parametricaService] updateParametro error:', error);
+            return { data: null, error };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('[parametricaService] updateParametro excepción:', err);
+        return { data: null, error: err };
+    }
+}
+
+/**
  * Actualiza el campo `orden` de un parámetro (para reordenar en la UI).
  * 
  * @param {string} id    — UUID del parámetro
