@@ -4,6 +4,7 @@ import { getParametros } from '../services/parametricaService.js';
 import { showToast } from '../components/toast.js';
 import { showModal, showConfirmModal } from '../components/modal.js';
 import { createDataTable } from '../components/dataTable.js';
+import { initDatePicker } from '../components/datePicker.js';
 import { MESES, INPUT_FIELDS, CALCULATED_FIELDS, crearRegistroVacio, getFieldDefinition } from '../models/incidente.js';
 import { formatNumber, formatPercent } from '../utils/formatter.js';
 
@@ -15,95 +16,110 @@ export async function renderRegistro(container) {
   // Build HTML
   container.innerHTML = `
     <div class="registro-container">
-      <div class="registro-header">
+      <div class="registro-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-6);">
         <h2>Registro de Datos SST</h2>
+        <button class="btn btn-primary btn-glow" id="btn-nuevo-registro" style="display: none;">
+          <i data-lucide="plus"></i> Nuevo Registro
+        </button>
       </div>
 
-      <div class="registro-form">
-        <!-- Columna Izquierda: Formulario de entrada -->
-        <div class="form-inputs-column">
-          <form id="registro-form">
-            
-            <div class="card form-section" style="margin-bottom:var(--space-6)">
-              <h3 class="form-section-title">1. Información General</h3>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="tipo-select" class="form-label">Tipo de Registro</label>
-                  <select class="form-select" id="tipo-select" name="tipo_registro">
-                    <option value="Directo">Directo</option>
-                    <option value="Contratista">Contratista</option>
-                  </select>
-                </div>
-                ${renderSelect('planta', [])}
-                ${renderSelect('empresa', [])}
-                ${renderSelect('tipo', [])}
-                ${renderSelect('anio', [])}
-                ${renderSelect('mes', [])}
-                ${renderInput('num_trabajadores')}
-                ${renderInput('hht')}
-              </div>
-            </div>
-
-            <div class="card form-section" style="margin-bottom:var(--space-6)">
-              <h3 class="form-section-title">2. Incidentes y Lesiones</h3>
-              <div class="form-grid">
-                ${renderInput('dp')}
-                ${renderInput('nm')}
-                ${renderInput('fai')}
-                ${renderInput('mti')}
-                ${renderInput('mwd')}
-                ${renderInput('lti')}
-                ${renderInput('fatalidad')}
-              </div>
-            </div>
-
-            <div class="card form-section">
-              <h3 class="form-section-title">3. Incapacidades y Ausentismo</h3>
-              <div class="form-grid">
-                ${renderInput('dias_incapacidad_at_elementia')}
-                ${renderInput('dias_incapacidad_at_ley')}
-                ${renderInput('dias_cargados')}
-                ${renderInput('casos_eg')}
-                ${renderInput('incapacidad_eg')}
-                ${renderInput('casos_el')}
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="btn btn-secondary" id="btn-limpiar">
-                <i data-lucide="refresh-cw"></i> Limpiar
-              </button>
-              <button type="submit" class="btn btn-primary" id="btn-guardar">
-                <i data-lucide="save"></i> Guardar Registro
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Columna Derecha: Indicadores calculados -->
-        <div class="indicadores-column">
-          <div class="card indicadores-section">
-            <h3 class="form-section-title" style="margin-bottom:0">Indicadores Calculados</h3>
-            <p style="color:var(--color-text-secondary);font-size:var(--text-xs);margin-bottom:var(--space-4)">Se actualizan en tiempo real.</p>
-            
-            <div class="indicadores-grid">
-              ${CALCULATED_FIELDS.map(f => `
-                <div class="indicador-item">
-                  <span class="indicador-label">${f.label}</span>
-                  <span class="indicador-value" id="calc-${f.key}">0.00</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tabla de Registros -->
-      <div class="registros-table-section card">
-        <div class="table-header">
+      <!-- Tabla de Registros (Vista Principal) -->
+      <div id="view-table" class="registros-table-section card active-view">
+        <div class="table-header" style="margin-bottom:var(--space-4);">
           <h3 class="card-title"><i data-lucide="list"></i> Registros Guardados</h3>
         </div>
         <div id="table-container"></div>
+      </div>
+
+      <!-- Formulario de Registro (Vista Oculta Inicialmente) -->
+      <div id="view-form" class="registro-form" style="display: none;">
+        <div style="margin-bottom: var(--space-4);">
+          <button class="btn-back" id="btn-volver-tabla" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:500;">
+            <i data-lucide="arrow-left" style="width:18px;height:18px;"></i> Volver a la tabla
+          </button>
+        </div>
+
+        <div style="display: flex; gap: var(--space-6);">
+          <!-- Columna Izquierda: Formulario de entrada -->
+          <div class="form-inputs-column" style="flex: 2;">
+            <form id="registro-form">
+              <fieldset id="form-fieldset" style="border:none; padding:0; margin:0;">
+                
+                <div class="card form-section" style="margin-bottom:var(--space-6)">
+                  <h3 class="form-section-title">1. Información General</h3>
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="tipo-select" class="form-label">Tipo de vinculación</label>
+                      <select class="form-select" id="tipo-select" name="tipo_registro">
+                        <option value="Directo">Directo</option>
+                        <option value="Contratista">Contratista</option>
+                      </select>
+                    </div>
+                    ${renderSelect('planta', [])}
+                    ${renderSelect('empresa', [])}
+                    <div class="form-group">
+                      <label for="input-periodo" class="form-label">Periodo (Mes y Año)</label>
+                      <input type="text" class="form-input" id="input-periodo" name="periodo" required readonly placeholder="Seleccione periodo...">
+                    </div>
+                    ${renderInput('num_trabajadores')}
+                    ${renderInput('hht')}
+                  </div>
+                </div>
+
+                <div class="card form-section" style="margin-bottom:var(--space-6)">
+                  <h3 class="form-section-title">2. Incidentes y Lesiones</h3>
+                  <div class="form-grid">
+                    ${renderInput('dp')}
+                    ${renderInput('nm')}
+                    ${renderInput('fai')}
+                    ${renderInput('mti')}
+                    ${renderInput('mwd')}
+                    ${renderInput('lti')}
+                    ${renderInput('fatalidad')}
+                  </div>
+                </div>
+
+                <div class="card form-section">
+                  <h3 class="form-section-title">3. Incapacidades y Ausentismo</h3>
+                  <div class="form-grid">
+                    ${renderInput('dias_incapacidad_at_elementia')}
+                    ${renderInput('dias_incapacidad_at_ley')}
+                    ${renderInput('dias_cargados')}
+                    ${renderInput('casos_eg')}
+                    ${renderInput('incapacidad_eg')}
+                    ${renderInput('casos_el')}
+                  </div>
+                </div>
+
+                <div class="form-actions" id="form-actions-container">
+                  <button type="button" class="btn btn-secondary" id="btn-limpiar">
+                    <i data-lucide="refresh-cw"></i> Limpiar
+                  </button>
+                  <button type="submit" class="btn btn-primary" id="btn-guardar">
+                    <i data-lucide="save"></i> Guardar Registro
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </div>
+
+          <!-- Columna Derecha: Indicadores calculados -->
+          <div class="indicadores-column" style="flex: 1;">
+            <div class="card indicadores-section" style="position:sticky; top:20px;">
+              <h3 class="form-section-title" style="margin-bottom:0">Indicadores Calculados</h3>
+              <p style="color:var(--color-text-secondary);font-size:var(--text-xs);margin-bottom:var(--space-4)">Se actualizan en tiempo real.</p>
+              
+              <div class="indicadores-grid">
+                ${CALCULATED_FIELDS.map(f => `
+                  <div class="indicador-item">
+                    <span class="indicador-label">${f.label}</span>
+                    <span class="indicador-value" id="calc-${f.key}">0.00</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -112,6 +128,12 @@ export async function renderRegistro(container) {
 
   // Load types from parametricas
   await loadParametricas(container);
+
+  // Initialize Date Picker
+  const periodoInput = container.querySelector('#input-periodo');
+  initDatePicker(periodoInput, () => {
+    updateCalculatedFields(container);
+  });
 
   // Bind events
   bindEvents(container);
@@ -154,11 +176,8 @@ function renderSelect(key, options) {
 }
 
 async function loadParametricas(container) {
-  const [ciudades, contratistas, meses, anios, empresas] = await Promise.all([
+  const [ciudades, empresas] = await Promise.all([
     getParametros('ciudad'),
-    getParametros('contratista'),
-    getParametros('mes'),
-    getParametros('anio'),
     getParametros('empresa')
   ]);
 
@@ -172,63 +191,76 @@ async function loadParametricas(container) {
 
   populateSelect('#input-planta', ciudades.data);
   populateSelect('#input-empresa', empresas.data);
-  populateSelect('#input-tipo', contratistas.data);
-  populateSelect('#input-mes', meses.data);
-  populateSelect('#input-anio', anios.data);
 }
 
 function handleTabChange(container, tabValue) {
-  const tipoFormGroup = container.querySelector('#input-tipo').closest('.form-group');
-  const inputTipo = container.querySelector('#input-tipo');
-  const plantaFormGroup = container.querySelector('#input-planta').closest('.form-group');
-  const empresaFormGroup = container.querySelector('#input-empresa').closest('.form-group');
+  const plantaFormGroup = container.querySelector('#input-planta')?.closest('.form-group');
+  const empresaFormGroup = container.querySelector('#input-empresa')?.closest('.form-group');
   
   if (tabValue === 'Directo') {
-    // Tipo: auto-set to Directo and hide
-    if (!inputTipo.querySelector('option[value="Directo"]')) {
-      const opt = document.createElement('option');
-      opt.value = 'Directo';
-      opt.text = 'Directo';
-      inputTipo.appendChild(opt);
-    }
-    inputTipo.value = 'Directo';
-    if (tipoFormGroup) tipoFormGroup.style.display = 'none';
-    
     // Planta: show, Empresa: hide
-    if (plantaFormGroup) plantaFormGroup.style.display = 'flex';
+    if (plantaFormGroup) plantaFormGroup.style.display = 'block';
     if (empresaFormGroup) empresaFormGroup.style.display = 'none';
     
     // Clear empresa value
-    container.querySelector('#input-empresa').value = '';
+    const inputEmpresa = container.querySelector('#input-empresa');
+    if (inputEmpresa) inputEmpresa.value = '';
   } else {
-    // Tipo: show for contratista selection
-    if (inputTipo.value === 'Directo') {
-      inputTipo.value = '';
-    }
-    if (tipoFormGroup) tipoFormGroup.style.display = 'flex';
-    
     // Planta: hide, Empresa: show
     if (plantaFormGroup) plantaFormGroup.style.display = 'none';
-    if (empresaFormGroup) empresaFormGroup.style.display = 'flex';
+    if (empresaFormGroup) empresaFormGroup.style.display = 'block';
     
     // Clear planta value
-    container.querySelector('#input-planta').value = '';
+    const inputPlanta = container.querySelector('#input-planta');
+    if (inputPlanta) inputPlanta.value = '';
   }
   
   updateCalculatedFields(container);
-}
-
-function bindEvents(container) {
+}function bindEvents(container) {
   const form = container.querySelector('#registro-form');
   const tipoSelect = container.querySelector('#tipo-select');
   const btnLimpiar = container.querySelector('#btn-limpiar');
   
+  const btnNuevoRegistro = container.querySelector('#btn-nuevo-registro');
+  const btnVolverTabla = container.querySelector('#btn-volver-tabla');
+  const viewTable = container.querySelector('#view-table');
+  const viewForm = container.querySelector('#view-form');
+
+  // Toggle views
+  const showForm = () => {
+    viewTable.style.display = 'none';
+    btnNuevoRegistro.style.display = 'none';
+    viewForm.style.display = 'block';
+  };
+
+  const showTable = () => {
+    viewForm.style.display = 'none';
+    viewTable.style.display = 'block';
+    btnNuevoRegistro.style.display = 'inline-flex';
+    refreshTable(container);
+  };
+
+  btnNuevoRegistro.addEventListener('click', () => {
+    resetForm(container);
+    setReadOnly(container, false);
+    showForm();
+  });
+
+  btnVolverTabla.addEventListener('click', () => {
+    showTable();
+  });
+
+  // Make showForm globally accessible for the edit/view buttons
+  container._showForm = showForm;
+  
+  // Initially show table and + button
+  showTable();
+
   // Sincronizar select de tipo de registro
   if (tipoSelect) {
     tipoSelect.addEventListener('change', (e) => {
       const val = e.target.value;
       handleTabChange(container, val);
-      refreshTable(container);
     });
   }
   
@@ -239,11 +271,12 @@ function bindEvents(container) {
   });
   
 
-
   // Comentarios
   const btnComments = container.querySelectorAll('.btn-comment');
   btnComments.forEach(btn => {
     btn.addEventListener('click', () => {
+      if(container.querySelector('#form-fieldset').disabled) return; // Prevent comments in read-only
+      
       const key = btn.dataset.key;
       const currentText = currentComments[key] || '';
       
@@ -251,7 +284,7 @@ function bindEvents(container) {
         title: `Comentario para ${getFieldDefinition(key).label}`,
         content: `
           <div style="margin:0;">
-            <textarea id="comment-textarea" class="form-input" style="width:100%; min-height:100px; resize:vertical; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px; border-radius: 8px; font-family: inherit; font-size: 14px;" placeholder="Escribe un comentario aquí...">${currentText}</textarea>
+            <textarea id="comment-textarea" class="form-input" style="width:100%; min-height:100px; resize:vertical; background: #ffffff; border: 1px solid var(--border-default); color: var(--text-primary); padding: 12px; border-radius: 8px; font-family: inherit; font-size: 14px;" placeholder="Escribe un comentario aquí...">${currentText}</textarea>
           </div>
         `,
         confirmText: 'Guardar',
@@ -262,10 +295,10 @@ function bindEvents(container) {
           const text = textarea ? textarea.value : '';
           if (text.trim() === '') {
             delete currentComments[key];
-            btn.style.color = 'var(--color-text-secondary)';
+            btn.style.color = 'var(--text-secondary)';
           } else {
             currentComments[key] = text.trim();
-            btn.style.color = 'var(--color-danger)';
+            btn.style.color = 'var(--danger)';
           }
           // Actualizar los campos calculados para reflejar cambios
           updateCalculatedFields(container);
@@ -281,6 +314,7 @@ function bindEvents(container) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     await saveRecord(container);
+    showTable();
   });
 }
 
@@ -291,7 +325,7 @@ function getFormData(container) {
   const activeTabVal = tipoSelect ? tipoSelect.value : 'Directo';
   
   if (activeTabVal === 'Contratista') {
-    data.tipo = container.querySelector('#input-tipo').value || '';
+    data.tipo = 'Contratista';
     data.empresa = container.querySelector('#input-empresa').value || '';
     data.planta = ''; // No aplica en Contratista
   } else {
@@ -300,10 +334,22 @@ function getFormData(container) {
     data.empresa = ''; // No aplica en Directo
   }
   
+  // Extract anio and mes from date picker
+  const periodoInput = container.querySelector('#input-periodo');
+  if (periodoInput && periodoInput.value) {
+    const [yyyy, mm] = periodoInput.value.split('-');
+    data.anio = parseInt(yyyy, 10);
+    // mm is 01-12, MESES is 0-indexed
+    data.mes = MESES[parseInt(mm, 10) - 1];
+  } else {
+    data.anio = null;
+    data.mes = null;
+  }
+  
   data.comentarios = currentComments;
   
   INPUT_FIELDS.forEach(f => {
-    if (f.key !== 'tipo' && f.key !== 'comentarios' && f.key !== 'planta' && f.key !== 'empresa') {
+    if (f.key !== 'tipo' && f.key !== 'comentarios' && f.key !== 'planta' && f.key !== 'empresa' && f.key !== 'anio' && f.key !== 'mes') {
       const el = container.querySelector(`#input-${f.key}`);
       if (el) {
         if (el.value === '') {
@@ -423,7 +469,11 @@ async function refreshTable(container) {
     return;
   }
 
-  const filteredRecords = res.data || [];
+  // Calculate indicators for each record dynamically
+  const filteredRecords = (res.data || []).map(r => {
+    const indicators = calcularTodosLosIndicadores(r);
+    return { ...r, ...indicators };
+  });
 
   // Calculate Acumulado row
   const sumData = {
@@ -448,11 +498,18 @@ async function refreshTable(container) {
     empresa: '-',
     num_trabajadores: sumData.num_trabajadores,
     hht: sumData.hht,
+    incidentes_lesiones: sumIndicators.incidentes_lesiones,
+    incidente_tirf: sumIndicators.incidente_tirf,
     total_incidentes: sumIndicators.total_incidentes,
-    ltif: sumIndicators.ltif
+    ltif: sumIndicators.ltif,
+    tirf: sumIndicators.tirf,
+    sr: sumIndicators.sr,
+    frecuencia_accidentalidad: sumIndicators.frecuencia_accidentalidad,
+    severidad_accidentalidad: sumIndicators.severidad_accidentalidad,
+    proporcion_mortalidad: sumIndicators.proporcion_mortalidad
   };
 
-  // Mostrar todas las columnas para que todos los registros (Directos y Contratistas) se visualicen juntos
+  // Mostrar todas las columnas para que todos los registros se visualicen juntos
   const columns = [
     { key: 'anio', label: 'Año' },
     { key: 'mes', label: 'Mes' },
@@ -461,8 +518,15 @@ async function refreshTable(container) {
     { key: 'empresa', label: 'Empresa', format: (v) => v || '-' },
     { key: 'num_trabajadores', label: 'Trabajadores' },
     { key: 'hht', label: 'HHT', format: (v) => formatNumber(v, 0) },
-    { key: 'total_incidentes', label: 'Total Inc.' },
-    { key: 'ltif', label: 'LTIF', format: (v) => formatNumber(v) }
+    { key: 'incidentes_lesiones', label: 'Inc. Lesión', format: (v) => formatNumber(v, 0) },
+    { key: 'incidente_tirf', label: 'Inc. TIRF', format: (v) => formatNumber(v, 0) },
+    { key: 'total_incidentes', label: 'Total Inc.', format: (v) => formatNumber(v, 0) },
+    { key: 'ltif', label: 'LTIF', format: (v) => formatNumber(v) },
+    { key: 'tirf', label: 'TIRF', format: (v) => formatNumber(v) },
+    { key: 'sr', label: 'SR', format: (v) => formatNumber(v) },
+    { key: 'frecuencia_accidentalidad', label: 'Frec. Acc.', format: (v) => formatNumber(v) },
+    { key: 'severidad_accidentalidad', label: 'Sev. Acc.', format: (v) => formatNumber(v) },
+    { key: 'proporcion_mortalidad', label: '% Mort.', format: (v) => formatPercent(v) }
   ];
 
   // Always recreate the table when switching tabs (columns change)
@@ -475,7 +539,16 @@ async function refreshTable(container) {
     columns,
     data: filteredRecords,
     footerRow,
-    onEdit: (record) => loadRecordIntoForm(container, record),
+    onView: (record) => {
+      loadRecordIntoForm(container, record);
+      setReadOnly(container, true);
+      container._showForm();
+    },
+    onEdit: (record) => {
+      loadRecordIntoForm(container, record);
+      setReadOnly(container, false);
+      container._showForm();
+    },
     onDelete: async (record) => {
       const confirmed = await showConfirmModal('Eliminar', `¿Seguro que desea eliminar el registro de ${record.mes} ${record.anio}?`);
       if (confirmed) {
@@ -491,6 +564,19 @@ async function refreshTable(container) {
   });
 }
 
+function setReadOnly(container, isReadOnly) {
+  const fieldset = container.querySelector('#form-fieldset');
+  const actionsContainer = container.querySelector('#form-actions-container');
+  
+  if (fieldset) {
+    fieldset.disabled = isReadOnly;
+  }
+  
+  if (actionsContainer) {
+    actionsContainer.style.display = isReadOnly ? 'none' : 'flex';
+  }
+}
+
 function loadRecordIntoForm(container, record) {
   currentRecordId = record.id;
   currentComments = record.comentarios || {};
@@ -504,7 +590,6 @@ function loadRecordIntoForm(container, record) {
   handleTabChange(container, isDirecto ? 'Directo' : 'Contratista');
   
   if (!isDirecto) {
-    container.querySelector('#input-tipo').value = record.tipo;
     if (record.empresa) {
       container.querySelector('#input-empresa').value = record.empresa;
     }
@@ -514,8 +599,19 @@ function loadRecordIntoForm(container, record) {
     }
   }
   
+  // Set Date Picker from anio and mes
+  if (record.anio && record.mes) {
+    const monthIndex = MESES.indexOf(record.mes);
+    if (monthIndex !== -1) {
+      const monthNum = (monthIndex + 1).toString().padStart(2, '0');
+      container.querySelector('#input-periodo').value = `${record.anio}-${monthNum}`;
+    }
+  } else {
+    container.querySelector('#input-periodo').value = '';
+  }
+  
   INPUT_FIELDS.forEach(f => {
-    if (f.key !== 'tipo' && f.key !== 'comentarios' && f.key !== 'planta' && f.key !== 'empresa') {
+    if (f.key !== 'tipo' && f.key !== 'comentarios' && f.key !== 'planta' && f.key !== 'empresa' && f.key !== 'anio' && f.key !== 'mes') {
       const el = container.querySelector(`#input-${f.key}`);
       if (el && record[f.key] !== undefined && record[f.key] !== null) {
         el.value = record[f.key];
@@ -529,9 +625,9 @@ function loadRecordIntoForm(container, record) {
   container.querySelectorAll('.btn-comment').forEach(btn => {
     const key = btn.dataset.key;
     if (currentComments[key]) {
-      btn.style.color = 'var(--color-danger)';
+      btn.style.color = 'var(--danger)';
     } else {
-      btn.style.color = 'var(--color-text-secondary)';
+      btn.style.color = 'var(--text-secondary)';
     }
   });
   

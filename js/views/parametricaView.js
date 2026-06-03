@@ -6,9 +6,6 @@ import { getParametros, createParametro, updateParametro, deleteParametro } from
 // These are fixed system-level categories. Their sub-values are stored in Supabase.
 const categories = [
   { id: 'ciudad', code: 'PAR-001', name: 'Centros de trabajo (Plantas)' },
-  { id: 'contratista', code: 'PAR-002', name: 'Tipo de Contratista' },
-  { id: 'mes', code: 'PAR-003', name: 'Mes' },
-  { id: 'anio', code: 'PAR-004', name: 'Año' },
   { id: 'empresa', code: 'PAR-005', name: 'Empresa' }
 ];
 

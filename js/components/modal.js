@@ -45,14 +45,14 @@ export function showModal({
 
         overlay.innerHTML = `
             <div class="modal-dialog" style="
-                background: #1a2332;
-                border: 1px solid rgba(255,255,255,0.08);
+                background: var(--bg-card-solid, #ffffff);
+                border: 1px solid var(--border-default, #e2e8f0);
                 border-radius: 16px;
                 padding: 0;
                 min-width: 400px;
                 max-width: 520px;
                 width: 90%;
-                box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+                box-shadow: var(--shadow-lg);
                 transform: scale(0.85);
                 opacity: 0;
                 transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 250ms ease;
@@ -62,13 +62,13 @@ export function showModal({
                     align-items: center;
                     justify-content: space-between;
                     padding: 20px 24px;
-                    border-bottom: 1px solid rgba(255,255,255,0.06);
+                    border-bottom: 1px solid var(--border-light, #f1f5f9);
                 ">
-                    <h3 style="margin:0;color:#e0e6ed;font-size:18px;font-weight:600;">${title}</h3>
+                    <h3 style="margin:0;color:var(--text-primary, #1e293b);font-size:18px;font-weight:600;">${title}</h3>
                     <button class="modal-close-btn" style="
                         background: none;
                         border: none;
-                        color: #8899aa;
+                        color: var(--text-secondary, #64748b);
                         cursor: pointer;
                         padding: 4px;
                         border-radius: 6px;
@@ -79,7 +79,7 @@ export function showModal({
                 </div>
                 <div class="modal-body" style="
                     padding: 24px;
-                    color: #c0c8d4;
+                    color: var(--text-primary, #1e293b);
                     font-size: 14px;
                     line-height: 1.6;
                 ">${content}</div>
@@ -88,14 +88,14 @@ export function showModal({
                     justify-content: flex-end;
                     gap: 12px;
                     padding: 16px 24px;
-                    border-top: 1px solid rgba(255,255,255,0.06);
+                    border-top: 1px solid var(--border-light, #f1f5f9);
                 ">
                     <button class="modal-cancel-btn" style="
                         padding: 10px 20px;
                         border-radius: 8px;
-                        border: 1px solid rgba(255,255,255,0.1);
+                        border: 1px solid var(--border-default, #e2e8f0);
                         background: transparent;
-                        color: #8899aa;
+                        color: var(--text-secondary, #64748b);
                         font-size: 14px;
                         cursor: pointer;
                         transition: all 200ms;
@@ -105,7 +105,7 @@ export function showModal({
                         padding: 10px 20px;
                         border-radius: 8px;
                         border: none;
-                        background: linear-gradient(135deg, #00b4d8, #0096c7);
+                        background: var(--gradient-accent, #2563eb);
                         color: #fff;
                         font-size: 14px;
                         font-weight: 600;

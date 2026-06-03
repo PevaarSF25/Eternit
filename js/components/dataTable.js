@@ -9,6 +9,7 @@
  * @param {string} options.containerId - ID of the container element
  * @param {Array<{key:string, label:string, format?:Function, width?:string}>} options.columns - Column definitions
  * @param {Array<Object>} options.data - Row data
+ * @param {Function} [options.onView] - Callback when view button clicked, receives row data
  * @param {Function} [options.onEdit] - Callback when edit button clicked, receives row data
  * @param {Function} [options.onDelete] - Callback when delete button clicked, receives row data
  * @param {Object} [options.footerRow] - Optional data for a summary/footer row
@@ -19,6 +20,7 @@ export function createDataTable({
     containerId,
     columns,
     data = [],
+    onView,
     onEdit,
     onDelete,
     footerRow = null,
@@ -86,8 +88,8 @@ export function createDataTable({
                 font-size: 12px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                color: #8899aa;
-                border-bottom: 1px solid rgba(255,255,255,0.06);
+                color: var(--text-secondary);
+                border-bottom: 1px solid var(--border-default);
                 cursor: pointer;
                 user-select: none;
                 white-space: nowrap;
@@ -99,8 +101,8 @@ export function createDataTable({
                 </span>
             </th>
         `).join('');
-
-        const actionHeader = (onEdit || onDelete) ? `
+ 
+        const actionHeader = (onView || onEdit || onDelete) ? `
             <th style="
                 padding: 12px 16px;
                 text-align: center;
@@ -108,12 +110,12 @@ export function createDataTable({
                 font-size: 12px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                color: #8899aa;
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-                width: 100px;
+                color: var(--text-secondary);
+                border-bottom: 1px solid var(--border-default);
+                width: 140px;
             ">Acciones</th>
         ` : '';
-
+ 
         const rows = currentData.map((row, idx) => {
             const cells = columns.map(col => {
                 let value = row[col.key];
@@ -123,19 +125,30 @@ export function createDataTable({
                 return `<td style="
                     padding: 12px 16px;
                     font-size: 13px;
-                    color: #c0c8d4;
-                    border-bottom: 1px solid rgba(255,255,255,0.04);
+                    color: var(--text-primary);
+                    border-bottom: 1px solid var(--border-light);
                     white-space: nowrap;
                 ">${value ?? '—'}</td>`;
             }).join('');
-
-            const actions = (onEdit || onDelete) ? `
+ 
+            const actions = (onView || onEdit || onDelete) ? `
                 <td style="
                     padding: 12px 16px;
                     text-align: center;
-                    border-bottom: 1px solid rgba(255,255,255,0.04);
+                    border-bottom: 1px solid var(--border-light);
                 ">
                     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                        ${onView ? `<button class="dt-view-btn" data-row-index="${idx}" title="Ver todos los datos" style="
+                            background: var(--accent-bg);
+                            border: 1px solid var(--border-focus);
+                            border-radius: 6px;
+                            padding: 6px;
+                            cursor: pointer;
+                            color: var(--accent);
+                            transition: all 200ms;
+                            display: flex;
+                            align-items: center;
+                        "><i data-lucide="eye" style="width:14px;height:14px;"></i></button>` : ''}
                         ${onEdit ? `<button class="dt-edit-btn" data-row-index="${idx}" title="Editar" style="
                             background: rgba(0,180,216,0.1);
                             border: 1px solid rgba(0,180,216,0.2);
@@ -148,12 +161,12 @@ export function createDataTable({
                             align-items: center;
                         "><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>` : ''}
                         ${onDelete ? `<button class="dt-delete-btn" data-row-index="${idx}" title="Eliminar" style="
-                            background: rgba(239,71,111,0.1);
-                            border: 1px solid rgba(239,71,111,0.2);
+                            background: var(--danger-bg);
+                            border: 1px solid rgba(239,68,68,0.2);
                             border-radius: 6px;
                             padding: 6px;
                             cursor: pointer;
-                            color: #ef476f;
+                            color: var(--danger);
                             transition: all 200ms;
                             display: flex;
                             align-items: center;
@@ -161,10 +174,10 @@ export function createDataTable({
                     </div>
                 </td>
             ` : '';
-
-            return `<tr style="transition: background 200ms;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">${cells}${actions}</tr>`;
+ 
+            return `<tr style="transition: background 200ms;" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">${cells}${actions}</tr>`;
         }).join('');
-
+ 
         let tfootHtml = '';
         if (footerRow && currentData.length > 0) {
             const footerCells = columns.map(col => {
@@ -175,22 +188,22 @@ export function createDataTable({
                 return `<td style="
                     padding: 12px 16px;
                     font-weight: 700;
-                    color: var(--color-text-primary, #fff);
+                    color: var(--text-primary);
                     font-size: 13px;
                     white-space: nowrap;
                 ">${value ?? '—'}</td>`;
             }).join('');
             
-            const emptyActionCell = (onEdit || onDelete) ? `<td></td>` : '';
+            const emptyActionCell = (onView || onEdit || onDelete) ? `<td></td>` : '';
             tfootHtml = `
-                <tfoot style="background: rgba(0, 180, 216, 0.1); border-top: 2px solid rgba(0, 180, 216, 0.3);">
+                <tfoot style="background: var(--accent-bg); border-top: 2px solid var(--accent);">
                     <tr>${footerCells}${emptyActionCell}</tr>
                 </tfoot>
             `;
         }
-
+ 
         container.innerHTML = `
-            <div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.06);">
+            <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border-default);">
                 <table style="width:100%;border-collapse:collapse;font-family:'Inter',sans-serif;">
                     <thead><tr>${headerCells}${actionHeader}</tr></thead>
                     <tbody>${rows}</tbody>
@@ -206,6 +219,12 @@ export function createDataTable({
 
         // Attach action handlers via event delegation
         container.addEventListener('click', (e) => {
+            const viewBtn = e.target.closest('.dt-view-btn');
+            if (viewBtn && onView) {
+                const idx = parseInt(viewBtn.dataset.rowIndex, 10);
+                onView(currentData[idx]);
+                return;
+            }
             const editBtn = e.target.closest('.dt-edit-btn');
             if (editBtn && onEdit) {
                 const idx = parseInt(editBtn.dataset.rowIndex, 10);
