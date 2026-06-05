@@ -129,7 +129,7 @@ import{i as e,n as t,r as n,t as r}from"./parametricaService-CrC5YH-P.js";import
         </tr>
       `,window.lucide&&window.lucide.createIcons({nodes:[f]});return}f.innerHTML=r.map((e,t)=>`
       <tr>
-        <td><span class="td-code">${e.orden||t+1}</span></td>
+        <td><span class="td-code">${t+1}</span></td>
         <td style="font-weight: 500; color: var(--text-primary);">${e.valor}</td>
         <td style="text-align: right;">
           <div class="actions-wrapper">

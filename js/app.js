@@ -3,9 +3,13 @@ import { initHeader, updateHeader } from './components/header.js';
 
 // Lazy loading the views to avoid circular dependencies and speed up initial load
 const routes = {
-  '#registro': {
-    loadView: () => import('./views/registroView.js').then(m => m.renderRegistro),
-    title: 'Registro de Datos'
+  '#registro-general': {
+    loadView: () => import('./views/registroView.js').then(m => c => m.renderRegistro(c, 'Directo')),
+    title: 'Registro de Datos (General)'
+  },
+  '#registro-contratistas': {
+    loadView: () => import('./views/registroView.js').then(m => c => m.renderRegistro(c, 'Contratista')),
+    title: 'Registro de Datos (Contratistas)'
   },
   '#dashboard': {
     loadView: () => import('./views/dashboardView.js').then(m => m.renderDashboard),
@@ -22,7 +26,7 @@ let currentViewDestroy = null;
 async function navigateTo(hash) {
   // Default route
   if (!hash || !routes[hash]) {
-    hash = '#registro';
+    hash = '#registro-general';
     window.location.hash = hash;
     return;
   }

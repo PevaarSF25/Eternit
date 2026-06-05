@@ -97,7 +97,8 @@ function downloadCSV(data) {
   document.body.removeChild(link);
 }
 
-export async function renderRegistro(container) {
+export async function renderRegistro(container, modo = 'Directo') {
+  container._currentModo = modo;
   // Build HTML
   container.innerHTML = `
     <div class="registro-container">
@@ -147,9 +148,9 @@ export async function renderRegistro(container) {
                   <div class="form-grid">
                     <div class="form-group">
                       <label for="tipo-select" class="form-label">Tipo de vinculación</label>
-                      <select class="form-select" id="tipo-select" name="tipo_registro">
-                        <option value="Directo">Directo</option>
-                        <option value="Contratista">Contratista</option>
+                      <select class="form-select" id="tipo-select" name="tipo_registro" disabled>
+                        <option value="Directo" ${modo === 'Directo' ? 'selected' : ''}>Directo</option>
+                        <option value="Contratista" ${modo === 'Contratista' ? 'selected' : ''}>Contratista</option>
                       </select>
                     </div>
                     ${renderSelect('planta', [])}
@@ -588,8 +589,10 @@ async function refreshTable(container, forceFetch = false) {
     cachedRegistros = res.data || [];
   }
 
-  // Calculate indicators for each record dynamically
-  let filteredRecords = cachedRegistros.map(r => {
+  const modo = container._currentModo || 'Directo';
+
+  // Filter out by modo
+  let filteredRecords = cachedRegistros.filter(r => r.tipo === modo).map(r => {
     const indicators = calcularTodosLosIndicadores(r);
     return { ...r, ...indicators };
   });
@@ -715,25 +718,30 @@ async function refreshTable(container, forceFetch = false) {
     recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
   }
 
-  // Mostrar todas las columnas para que todos los registros se visualicen juntos
-  const columns = [
-    { key: 'anio', label: 'Año' },
-    { key: 'mes', label: 'Mes' },
-    { key: 'tipo', label: 'Tipo' },
-    { key: 'planta', label: 'Planta', format: (v) => v || '-' },
-    { key: 'empresa', label: 'Empresa', format: (v) => v || '-' },
-    { key: 'num_trabajadores', label: 'Trabajadores' },
+  // Columnas actualizadas según requerimientos
+  const columns = [];
+  
+  columns.push({ key: 'mes', label: 'PERIODO', format: (v, r) => `${r.mes} ${r.anio}` });
+  
+  if (modo === 'Contratista') {
+      columns.push({ key: 'empresa', label: 'EMPRESA', width: '220px', format: (v) => v || '-' });
+  }
+  // PLANTA está oculto en todas las vistas según la solicitud
+  
+  columns.push(
+    { key: 'num_trabajadores', label: '<span title="Trabajadores">TRAB.</span>' },
     { key: 'hht', label: 'HHT', format: (v) => formatNumber(v, 0) },
-    { key: 'incidentes_lesiones', label: 'Inc. Lesión', format: (v) => formatNumber(v, 0) },
-    { key: 'incidente_tirf', label: 'Inc. TIRF', format: (v) => formatNumber(v, 0) },
-    { key: 'total_incidentes', label: 'Total Inc.', format: (v) => formatNumber(v, 0) },
-    { key: 'ltif', label: 'LTIF', format: (v) => formatNumber(v) },
-    { key: 'tirf', label: 'TIRF', format: (v) => formatNumber(v) },
-    { key: 'sr', label: 'SR', format: (v) => formatNumber(v) },
-    { key: 'frecuencia_accidentalidad', label: 'Frec. Acc.', format: (v) => formatNumber(v) },
-    { key: 'severidad_accidentalidad', label: 'Sev. Acc.', format: (v) => formatNumber(v) },
-    { key: 'proporcion_mortalidad', label: '% Mort.', format: (v) => formatPercent(v) }
-  ];
+    { key: 'incidentes_lesiones', label: '<span title="Incidentes con Lesión">LESIÓN</span>', format: (v) => formatNumber(v, 0) },
+    { key: 'incidente_tirf', label: '<span title="Incidentes TIRF">TIRF</span>', format: (v) => formatNumber(v, 0) },
+    { key: 'total_incidentes', label: '<span title="Total Incidentes">INC.</span>', format: (v) => formatNumber(v, 0) },
+    { key: 'ltif', label: '<span title="Lost Time Injury Frequency Rate (Tasa de Frecuencia de Lesiones con Tiempo Perdido)">LTIF</span>', format: (v) => formatNumber(v) },
+    { key: 'tirf', label: '<span title="Total Recordable Injury Frequency Rate (Tasa de Frecuencia de Lesiones Totales Registrables)">TIRF</span>', format: (v) => formatNumber(v) },
+    { key: 'sr', label: '<span title="Severity Rate (Tasa de Severidad)">SR</span>', format: (v) => formatNumber(v) },
+    { key: 'frecuencia_accidentalidad', label: '<span title="Frecuencia de Accidentalidad">Frec. Acc.</span>', format: (v) => formatNumber(v) },
+    { key: 'severidad_accidentalidad', label: '<span title="Severidad de Accidentalidad">Sev. Acc.</span>', format: (v) => formatNumber(v) },
+    { key: 'proporcion_mortalidad', label: '<span title="Proporción de Mortalidad">% Mort.</span>', format: (v) => formatPercent(v) }
+  );
+
 
   // Always recreate the table when switching tabs (columns change)
   if (dataTableInstance) {

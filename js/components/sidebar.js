@@ -4,7 +4,6 @@
  */
 
 const MENU_ITEMS = [
-    { label: 'Registro', icon: 'clipboard-list', hash: '#registro' },
     { label: 'Dashboard', icon: 'bar-chart-2', hash: '#dashboard' },
     { 
         label: 'Administración', 
@@ -12,6 +11,15 @@ const MENU_ITEMS = [
         isCollapse: true,
         children: [
             { label: 'Paramétricas', hash: '#parametricas' }
+        ]
+    },
+    { 
+        label: 'Registro', 
+        icon: 'clipboard-list', 
+        isCollapse: true,
+        children: [
+            { label: 'General', hash: '#registro-general' },
+            { label: 'Contratistas', hash: '#registro-contratistas' }
         ]
     }
 ];
@@ -32,7 +40,7 @@ export function initSidebar() {
     attachEvents(sidebar);
 
     // Set initial active state
-    updateActiveNav(window.location.hash || '#registro');
+    updateActiveNav(window.location.hash || '#registro-general');
 }
 
 /**
