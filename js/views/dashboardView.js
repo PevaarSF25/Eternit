@@ -11,7 +11,7 @@ export async function renderDashboard(container) {
     <div class="dashboard-container">
       
       <!-- Filters -->
-      <div class="dashboard-filters card" style="padding:var(--space-3) var(--space-4); margin-bottom:var(--space-2)">
+      <div class="dashboard-filters card" style="padding:var(--space-3) var(--space-5); margin-bottom:var(--space-2); display:flex; align-items:flex-end; gap:var(--space-4);">
         <div class="filter-group">
           <label class="filter-label">Tipo</label>
           <select class="form-select" id="filter-tipo">
@@ -31,10 +31,11 @@ export async function renderDashboard(container) {
             ${MESES.map(m => `<option value="${m}">${m}</option>`).join('')}
           </select>
         </div>
-        <div style="flex-grow: 1;"></div>
-        <button class="btn btn-secondary" id="btn-limpiar-filtros">
-          <i data-lucide="filter-x"></i> Limpiar Filtros
-        </button>
+        <div style="margin-left:auto;">
+          <button class="btn btn-secondary" id="btn-limpiar-filtros">
+            <i data-lucide="filter-x"></i> Limpiar Filtros
+          </button>
+        </div>
       </div>
 
       <!-- KPIs -->

@@ -6,6 +6,7 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .registro-header {
@@ -144,7 +145,10 @@
 
 /* Table Section */
 .registros-table-section {
-  margin-top: var(--space-8);
+  margin-top: var(--space-4);
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .table-header {

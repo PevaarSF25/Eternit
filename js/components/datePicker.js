@@ -86,7 +86,7 @@ function openDatePicker(inputElement, onChangeCallback) {
         // 1. Header Block
         const header = document.createElement('div');
         Object.assign(header.style, {
-            background: 'var(--accent, #2563eb)',
+            background: 'var(--accent, #ef4444)',
             padding: '20px 24px',
             color: '#ffffff',
             display: 'flex',
@@ -273,12 +273,12 @@ function openDatePicker(inputElement, onChangeCallback) {
                 const isToday = (viewingYear === today.getFullYear() && viewingMonth === today.getMonth() && day === today.getDate());
 
                 if (isSelected) {
-                    dayCell.style.background = 'var(--accent, #2563eb)';
+                    dayCell.style.background = 'var(--accent, #ef4444)';
                     dayCell.style.color = '#ffffff';
                     dayCell.style.fontWeight = '700';
                 } else if (isToday) {
-                    dayCell.style.border = '1px solid var(--accent, #2563eb)';
-                    dayCell.style.color = 'var(--accent, #2563eb)';
+                    dayCell.style.border = '1px solid var(--accent, #ef4444)';
+                    dayCell.style.color = 'var(--accent, #ef4444)';
                 } else {
                     dayCell.addEventListener('mouseenter', () => {
                         dayCell.style.background = 'var(--bg-hover, #f1f5f9)';
@@ -352,7 +352,7 @@ function openDatePicker(inputElement, onChangeCallback) {
         Object.assign(cancelBtn.style, {
             background: 'none',
             border: 'none',
-            color: 'var(--accent, #2563eb)',
+            color: 'var(--accent, #ef4444)',
             fontWeight: '700',
             fontSize: '13px',
             padding: '8px 12px',
@@ -367,7 +367,7 @@ function openDatePicker(inputElement, onChangeCallback) {
         Object.assign(okBtn.style, {
             background: 'none',
             border: 'none',
-            color: 'var(--accent, #2563eb)',
+            color: 'var(--accent, #ef4444)',
             fontWeight: '700',
             fontSize: '13px',
             padding: '8px 12px',

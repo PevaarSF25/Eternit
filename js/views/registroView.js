@@ -11,16 +11,113 @@ import { formatNumber, formatPercent } from '../utils/formatter.js';
 let currentRecordId = null;
 let dataTableInstance = null;
 let currentComments = {};
+let cachedRegistros = null;
+let currentExportData = [];
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function downloadCSV(data) {
+  if (!data || data.length === 0) {
+    showToast('No hay datos para exportar', 'warning');
+    return;
+  }
+  
+  const headers = [
+    'Anio', 'Mes', 'Tipo de vinculacion', 'Planta', 'Empresa', 
+    'Trabajadores', 'HHT', 'DP', 'NM', 'FAI', 'MTI', 'MWD', 'LTI', 'Fatalidad',
+    'Dias Inc. Elementia', 'Dias Inc. Ley', 'Dias Cargados',
+    'Casos EG', 'Incapacidad EG', 'Casos EL',
+    'Inc. Lesion', 'Inc. TIRF', 'Total Inc.', 'LTIF', 'TIRF', 'SR', 
+    'Frec. Acc.', 'Sev. Acc.', '% Mort.'
+  ];
+  
+  const csvRows = [];
+  csvRows.push(headers.join(';'));
+  
+  data.forEach(r => {
+    if (r.isSubtotal) return;
+    
+    const row = [
+      r.anio ?? '',
+      r.mes ?? '',
+      r.tipo ?? '',
+      r.planta ?? '',
+      r.empresa ?? '',
+      r.num_trabajadores ?? 0,
+      r.hht ?? 0,
+      r.dp ?? 0,
+      r.nm ?? 0,
+      r.fai ?? 0,
+      r.mti ?? 0,
+      r.mwd ?? 0,
+      r.lti ?? 0,
+      r.fatalidad ?? 0,
+      r.dias_incapacidad_at_elementia ?? 0,
+      r.dias_incapacidad_at_ley ?? 0,
+      r.dias_cargados ?? 0,
+      r.casos_eg ?? 0,
+      r.incapacidad_eg ?? 0,
+      r.casos_el ?? 0,
+      r.incidentes_lesiones ?? 0,
+      r.incidente_tirf ?? 0,
+      r.total_incidentes ?? 0,
+      r.ltif ?? 0,
+      r.tirf ?? 0,
+      r.sr ?? 0,
+      r.frecuencia_accidentalidad ?? 0,
+      r.severidad_accidentalidad ?? 0,
+      r.proporcion_mortalidad ?? 0
+    ];
+    
+    const escapedRow = row.map(v => {
+      const s = String(v).replace(/"/g, '""');
+      return s.includes(';') || s.includes('\n') || s.includes('"') ? `"${s}"` : s;
+    });
+    csvRows.push(escapedRow.join(';'));
+  });
+  
+  const csvContent = "\ufeff" + csvRows.join("\n");
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `registro_sst_export_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 export async function renderRegistro(container) {
   // Build HTML
   container.innerHTML = `
     <div class="registro-container">
-      <div class="registro-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-6);">
+      <div class="registro-header" style="display:flex; flex-direction:column; align-items:stretch; gap:var(--space-4); margin-bottom:var(--space-6); width:100%;">
+
         <h2>Registro de Datos SST</h2>
-        <button class="btn btn-primary btn-glow" id="btn-nuevo-registro" style="display: none;">
-          <i data-lucide="plus"></i> Nuevo Registro
-        </button>
+        
+        <!-- Controles de la cabecera: Buscador a la izquierda, Botones a la derecha -->
+        <div style="display:flex; align-items:center; width:100%; gap: 12px;">
+          <div class="search-wrapper" id="table-search-wrapper" style="position:relative; flex:0 1 500px;">
+            <input type="text" class="form-input" id="table-search-input" placeholder="Buscar por fecha, empresa, planta..." style="width:100%; padding-left:40px; background-color:var(--bg-surface); border:1px solid var(--border-default);">
+            <i data-lucide="search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); width:16px; height:16px; pointer-events:none;"></i>
+          </div>
+          <button class="btn btn-secondary" id="btn-exportar-csv" style="display:none; margin-left:auto; flex-shrink:0; white-space:nowrap; align-items:center; gap:6px;">
+            <i data-lucide="download" style="width:16px;height:16px;"></i> Exportar CSV
+          </button>
+          <button class="btn btn-primary btn-glow" id="btn-nuevo-registro" style="display:none; flex-shrink:0; white-space:nowrap; align-items:center; gap:6px;">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> Nuevo Registro
+          </button>
+        </div>
       </div>
 
       <!-- Tabla de Registros (Vista Principal) -->
@@ -222,14 +319,20 @@ function handleTabChange(container, tabValue) {
   const btnLimpiar = container.querySelector('#btn-limpiar');
   
   const btnNuevoRegistro = container.querySelector('#btn-nuevo-registro');
+  const btnExportarCsv = container.querySelector('#btn-exportar-csv');
   const btnVolverTabla = container.querySelector('#btn-volver-tabla');
   const viewTable = container.querySelector('#view-table');
   const viewForm = container.querySelector('#view-form');
+
+  const tableSearchWrapper = container.querySelector('#table-search-wrapper');
+  const tableSearchInput = container.querySelector('#table-search-input');
 
   // Toggle views
   const showForm = () => {
     viewTable.style.display = 'none';
     btnNuevoRegistro.style.display = 'none';
+    if (btnExportarCsv) btnExportarCsv.style.display = 'none';
+    if (tableSearchWrapper) tableSearchWrapper.style.display = 'none';
     viewForm.style.display = 'block';
   };
 
@@ -237,8 +340,22 @@ function handleTabChange(container, tabValue) {
     viewForm.style.display = 'none';
     viewTable.style.display = 'block';
     btnNuevoRegistro.style.display = 'inline-flex';
+    if (btnExportarCsv) btnExportarCsv.style.display = 'inline-flex';
+    if (tableSearchWrapper) tableSearchWrapper.style.display = 'block';
     refreshTable(container);
   };
+
+  if (tableSearchInput) {
+    tableSearchInput.addEventListener('input', debounce(() => {
+      refreshTable(container);
+    }, 300));
+  }
+
+  if (btnExportarCsv) {
+    btnExportarCsv.addEventListener('click', () => {
+      downloadCSV(currentExportData);
+    });
+  }
 
   btnNuevoRegistro.addEventListener('click', () => {
     resetForm(container);
@@ -253,7 +370,7 @@ function handleTabChange(container, tabValue) {
   // Make showForm globally accessible for the edit/view buttons
   container._showForm = showForm;
   
-  // Initially show table and + button
+  // Initially show table and buttons
   showTable();
 
   // Sincronizar select de tipo de registro
@@ -443,7 +560,7 @@ async function saveRecord(container) {
 
     showToast(currentRecordId ? 'Registro actualizado' : 'Registro guardado', 'success');
     resetForm(container);
-    await refreshTable(container);
+    await refreshTable(container, true);
     
   } catch (err) {
     showToast(err.message || 'Error al guardar', 'error');
@@ -454,7 +571,7 @@ async function saveRecord(container) {
   }
 }
 
-async function refreshTable(container) {
+async function refreshTable(container, forceFetch = false) {
   const tableContainer = container.querySelector('#table-container');
   
   // Show loading
@@ -462,20 +579,45 @@ async function refreshTable(container) {
     tableContainer.innerHTML = '<div class="spinner" style="margin:20px auto"></div>';
   }
 
-  const res = await getAllRegistros();
-  
-  if (res.error) {
-    tableContainer.innerHTML = `<p style="color:var(--color-danger)">Error: ${res.error.message}</p>`;
-    return;
+  if (forceFetch || !cachedRegistros) {
+    const res = await getAllRegistros();
+    if (res.error) {
+      tableContainer.innerHTML = `<p style="color:var(--color-danger)">Error: ${res.error.message}</p>`;
+      return;
+    }
+    cachedRegistros = res.data || [];
   }
 
   // Calculate indicators for each record dynamically
-  const filteredRecords = (res.data || []).map(r => {
+  let filteredRecords = cachedRegistros.map(r => {
     const indicators = calcularTodosLosIndicadores(r);
     return { ...r, ...indicators };
   });
 
-  // Calculate Acumulado row
+  // Filter based on search query
+  const searchInput = container.querySelector('#table-search-input');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  if (query) {
+    filteredRecords = filteredRecords.filter(r => {
+      const anioStr = String(r.anio || '').toLowerCase();
+      const mesStr = String(r.mes || '').toLowerCase();
+      const plantaStr = String(r.planta || '').toLowerCase();
+      const empresaStr = String(r.empresa || '').toLowerCase();
+      const tipoStr = String(r.tipo || '').toLowerCase();
+      const dateCombined = `${mesStr} ${anioStr}`;
+      return anioStr.includes(query) ||
+             mesStr.includes(query) ||
+             plantaStr.includes(query) ||
+             empresaStr.includes(query) ||
+             tipoStr.includes(query) ||
+             dateCombined.includes(query);
+    });
+  }
+
+  // Save for CSV export (before subtotals)
+  currentExportData = filteredRecords;
+
+  // Calculate overall Acumulado row
   const sumData = {
     fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
     num_trabajadores: 0, fatalidad: 0,
@@ -491,7 +633,7 @@ async function refreshTable(container) {
 
   const sumIndicators = calcularTodosLosIndicadores(sumData);
   const footerRow = {
-    anio: 'Acumulado',
+    anio: 'Acumulado General',
     mes: '-',
     tipo: '-',
     planta: '-',
@@ -508,6 +650,70 @@ async function refreshTable(container) {
     severidad_accidentalidad: sumIndicators.severidad_accidentalidad,
     proporcion_mortalidad: sumIndicators.proporcion_mortalidad
   };
+
+  // Helper to calculate subtotal rows for each Year and Month group
+  const calculateSubtotalRow = (records, anio, mes) => {
+    const groupSum = {
+      fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
+      num_trabajadores: 0, fatalidad: 0,
+      dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
+      dias_cargados: 0, casos_eg: 0, incapacidad_eg: 0, casos_el: 0
+    };
+
+    records.forEach(r => {
+      Object.keys(groupSum).forEach(key => {
+        groupSum[key] += (Number(r[key]) || 0);
+      });
+    });
+
+    const groupIndicators = calcularTodosLosIndicadores(groupSum);
+    
+    return {
+      isSubtotal: true,
+      anio: anio,
+      mes: mes,
+      tipo: '-',
+      planta: '-',
+      empresa: 'Acumulado',
+      num_trabajadores: groupSum.num_trabajadores,
+      hht: groupSum.hht,
+      ...groupSum,
+      incidentes_lesiones: groupIndicators.incidentes_lesiones,
+      incidente_tirf: groupIndicators.incidente_tirf,
+      total_incidentes: groupIndicators.total_incidentes,
+      ltif: groupIndicators.ltif,
+      tirf: groupIndicators.tirf,
+      sr: groupIndicators.sr,
+      frecuencia_accidentalidad: groupIndicators.frecuencia_accidentalidad,
+      severidad_accidentalidad: groupIndicators.severidad_accidentalidad,
+      proporcion_mortalidad: groupIndicators.proporcion_mortalidad
+    };
+  };
+
+  // Group filtered records chronologically and inject subtotals
+  const recordsWithSubtotals = [];
+  let currentGroup = [];
+  let currentAnio = null;
+  let currentMes = null;
+
+  filteredRecords.forEach((r) => {
+    if (r.anio !== currentAnio || r.mes !== currentMes) {
+      if (currentGroup.length > 0) {
+        recordsWithSubtotals.push(...currentGroup);
+        recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+      }
+      currentGroup = [r];
+      currentAnio = r.anio;
+      currentMes = r.mes;
+    } else {
+      currentGroup.push(r);
+    }
+  });
+
+  if (currentGroup.length > 0) {
+    recordsWithSubtotals.push(...currentGroup);
+    recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+  }
 
   // Mostrar todas las columnas para que todos los registros se visualicen juntos
   const columns = [
@@ -537,7 +743,7 @@ async function refreshTable(container) {
   dataTableInstance = createDataTable({
     containerId: 'table-container',
     columns,
-    data: filteredRecords,
+    data: recordsWithSubtotals,
     footerRow,
     onView: (record) => {
       loadRecordIntoForm(container, record);
@@ -556,7 +762,7 @@ async function refreshTable(container) {
         if (delRes.error) showToast('Error al eliminar', 'error');
         else {
           showToast('Registro eliminado', 'success');
-          refreshTable(container);
+          await refreshTable(container, true);
         }
       }
     },

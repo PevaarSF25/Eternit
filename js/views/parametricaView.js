@@ -6,7 +6,7 @@ import { getParametros, createParametro, updateParametro, deleteParametro } from
 // These are fixed system-level categories. Their sub-values are stored in Supabase.
 const categories = [
   { id: 'ciudad', code: 'PAR-001', name: 'Centros de trabajo (Plantas)' },
-  { id: 'empresa', code: 'PAR-005', name: 'Empresa' }
+  { id: 'empresa', code: 'PAR-002', name: 'Empresa' }
 ];
 
 // --- State ---
@@ -218,7 +218,7 @@ export async function renderParametricas(container) {
 
     valuesTbody.innerHTML = filteredValues.map((val, index) => `
       <tr>
-        <td><span class="td-code">${val.orden || (index + 1)}</span></td>
+        <td><span class="td-code">${index + 1}</span></td>
         <td style="font-weight: 500; color: var(--text-primary);">${val.valor}</td>
         <td style="text-align: right;">
           <div class="actions-wrapper">

@@ -7,13 +7,13 @@
 const DEFAULT_COLORS = ['#00b4d8', '#06d6a0', '#ef476f', '#ffd166', '#48cae4', '#9b5de5'];
 
 const THEME = {
-    gridColor: 'rgba(255,255,255,0.06)',
-    textColor: '#8899aa',
+    gridColor: 'rgba(0,0,0,0.06)',
+    textColor: '#64748b',
     fontFamily: "'Inter', sans-serif",
-    tooltipBg: 'rgba(15, 23, 36, 0.95)',
-    tooltipBorder: 'rgba(255,255,255,0.1)',
-    tooltipTitleColor: '#e0e6ed',
-    tooltipBodyColor: '#c0c8d4'
+    tooltipBg: 'rgba(30, 41, 59, 0.95)',
+    tooltipBorder: 'rgba(0,0,0,0.1)',
+    tooltipTitleColor: '#f1f5f9',
+    tooltipBodyColor: '#cbd5e1'
 };
 
 /**
@@ -133,7 +133,7 @@ export function createDoughnutChart(ctx, { labels, data, colors }) {
             datasets: [{
                 data,
                 backgroundColor: chartColors,
-                borderColor: 'rgba(15, 23, 36, 0.8)',
+                borderColor: '#ffffff',
                 borderWidth: 3,
                 hoverOffset: 8
             }]
