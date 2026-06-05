@@ -694,6 +694,8 @@ async function refreshTable(container, forceFetch = false) {
   };
 
   // Group filtered records chronologically and inject subtotals
+  // Solo se agrega fila de subtotal cuando hay MÁS DE UN registro en el mismo mes/año
+  // (ej: varias empresas contratistas en el mismo periodo). Un solo registro NO genera subtotal.
   const recordsWithSubtotals = [];
   let currentGroup = [];
   let currentAnio = null;
@@ -703,7 +705,9 @@ async function refreshTable(container, forceFetch = false) {
     if (r.anio !== currentAnio || r.mes !== currentMes) {
       if (currentGroup.length > 0) {
         recordsWithSubtotals.push(...currentGroup);
-        recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+        if (currentGroup.length > 1) {
+          recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+        }
       }
       currentGroup = [r];
       currentAnio = r.anio;
@@ -715,7 +719,9 @@ async function refreshTable(container, forceFetch = false) {
 
   if (currentGroup.length > 0) {
     recordsWithSubtotals.push(...currentGroup);
-    recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+    if (currentGroup.length > 1) {
+      recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+    }
   }
 
   // Columnas actualizadas según requerimientos

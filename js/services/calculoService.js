@@ -128,42 +128,49 @@ export function calcularTIRF(mti, mwd, lti, hht) {
 /**
  * Calcula el Severity Rate (SR).
  * 
- * Fórmula: ((días_incapacidad_AT + días_cargados) × 200 000) / HHT
+ * Fórmula: (días_incapacidad_AT_Elementia × 200 000) / HHT
  * 
- * @param {number} diasIncapacidadAT — Días incapacitados por Accidente de Trabajo
- * @param {number} diasCargados      — Días cargados
+ * Nota: Según las fórmulas del Excel, SR usa únicamente los días de incapacidad
+ * registrados por Elementia (NO incluye días cargados).
+ * 
+ * @param {number} diasIncapacidadAT — Días incapacitados x AT (Elementia)
  * @param {number} hht               — Horas Hombre Trabajadas
  * @returns {number} SR redondeado a 2 decimales; 0 si HHT es 0
  */
-export function calcularSR(diasIncapacidadAT, diasCargados, hht) {
-    return round(safeDivide((diasIncapacidadAT + diasCargados) * CONSTANTE_ELEMENTIA, hht));
+export function calcularSR(diasIncapacidadAT, hht) {
+    return round(safeDivide(diasIncapacidadAT * CONSTANTE_ELEMENTIA, hht));
 }
 
 /**
  * Calcula la Frecuencia de Accidentalidad (normatividad colombiana).
  * 
- * Fórmula: (LTI / N° Trabajadores) × 100
+ * Fórmula: (No. Incidentes lesión (FAI+MTI+MWD+LTI) / N° Trabajadores) × 100
  * 
- * @param {number} lti             — Lost Time Incidents
- * @param {number} numTrabajadores — Número de trabajadores
+ * Nota: Según las fórmulas del Excel, se usa el total de incidentes con
+ * lesión (no solo LTI) como numerador.
+ * 
+ * @param {number} incidentesLesion — Total incidentes con lesión (FAI+MTI+MWD+LTI)
+ * @param {number} numTrabajadores  — Número de trabajadores
  * @returns {number} Frecuencia redondeada a 2 decimales; 0 si numTrabajadores es 0
  */
-export function calcularFrecuenciaAccidentalidad(lti, numTrabajadores) {
-    return round(safeDivide(lti, numTrabajadores) * CONSTANTE_NORMATIVIDAD_CO);
+export function calcularFrecuenciaAccidentalidad(incidentesLesion, numTrabajadores) {
+    return round(safeDivide(incidentesLesion, numTrabajadores) * CONSTANTE_NORMATIVIDAD_CO);
 }
 
 /**
  * Calcula la Severidad de Accidentalidad (normatividad colombiana).
  * 
- * Fórmula: ((días_incapacidad_AT + días_cargados) / N° Trabajadores) × 100
+ * Fórmula: (días_incapacidad_AT_Elementia / N° Trabajadores) × 100
  * 
- * @param {number} diasIncapacidadAT — Días incapacitados por AT
- * @param {number} diasCargados      — Días cargados
+ * Nota: Según las fórmulas del Excel, la severidad usa únicamente los días
+ * de incapacidad registrados por Elementia (NO incluye días cargados).
+ * 
+ * @param {number} diasIncapacidadAT — Días incapacitados x AT (Elementia)
  * @param {number} numTrabajadores   — Número de trabajadores
  * @returns {number} Severidad redondeada a 2 decimales; 0 si numTrabajadores es 0
  */
-export function calcularSeveridadAccidentalidad(diasIncapacidadAT, diasCargados, numTrabajadores) {
-    return round(safeDivide(diasIncapacidadAT + diasCargados, numTrabajadores) * CONSTANTE_NORMATIVIDAD_CO);
+export function calcularSeveridadAccidentalidad(diasIncapacidadAT, numTrabajadores) {
+    return round(safeDivide(diasIncapacidadAT, numTrabajadores) * CONSTANTE_NORMATIVIDAD_CO);
 }
 
 /**
@@ -220,22 +227,23 @@ export function calcularTodosLosIndicadores(data) {
     const dp  = Number(data.dp)  || 0;
     const nm  = Number(data.nm)  || 0;
     const hht = Number(data.hht) || 0;
-    const numTrabajadores    = Number(data.num_trabajadores)    || 0;
-    const fatalidad          = Number(data.fatalidad)           || 0;
-    const diasIncapacidadAT  = (Number(data.dias_incapacidad_at_elementia) || 0) + (Number(data.dias_incapacidad_at_ley) || 0);
-    const diasCargados       = Number(data.dias_cargados)       || 0;
+    const numTrabajadores        = Number(data.num_trabajadores)             || 0;
+    const fatalidad              = Number(data.fatalidad)                    || 0;
+    // SR y Severidad usan SOLO días Elementia (no incluyen días cargados)
+    const diasIncapacidadAT      = Number(data.dias_incapacidad_at_elementia) || 0;
 
-    const total_incidentes = calcularTotalIncidentes(dp, nm, fai, mti, mwd, lti);
+    const incidentes_lesiones  = calcularIncidentesLesiones(fai, mti, mwd, lti);
+    const total_incidentes     = calcularTotalIncidentes(dp, nm, fai, mti, mwd, lti);
 
     return {
-        incidentes_lesiones:       calcularIncidentesLesiones(fai, mti, mwd, lti),
+        incidentes_lesiones,
         incidente_tirf:            calcularIncidenteTIRF(mti, mwd, lti),
-        total_incidentes:          total_incidentes,
+        total_incidentes,
         ltif:                      calcularLTIF(lti, hht),
         tirf:                      calcularTIRF(mti, mwd, lti, hht),
-        sr:                        calcularSR(diasIncapacidadAT, diasCargados, hht),
-        frecuencia_accidentalidad: calcularFrecuenciaAccidentalidad(lti, numTrabajadores),
-        severidad_accidentalidad:  calcularSeveridadAccidentalidad(diasIncapacidadAT, diasCargados, numTrabajadores),
+        sr:                        calcularSR(diasIncapacidadAT, hht),
+        frecuencia_accidentalidad: calcularFrecuenciaAccidentalidad(incidentes_lesiones, numTrabajadores),
+        severidad_accidentalidad:  calcularSeveridadAccidentalidad(diasIncapacidadAT, numTrabajadores),
         proporcion_mortalidad:     calcularProporcionMortalidad(fatalidad, total_incidentes),
     };
 }
