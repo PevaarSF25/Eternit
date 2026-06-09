@@ -107,11 +107,31 @@ export async function renderRegistro(container, modo = 'Directo') {
         <h2>Registro de Datos SST</h2>
         
         <!-- Controles de la cabecera: Buscador a la izquierda, Botones a la derecha -->
-        <div style="display:flex; align-items:center; width:100%; gap: 12px;">
-          <div class="search-wrapper" id="table-search-wrapper" style="position:relative; flex:0 1 500px;">
+        <div style="display:flex; align-items:center; width:100%; gap: 12px; flex-wrap: wrap;">
+          <div class="search-wrapper" id="table-search-wrapper" style="position:relative; flex:0 1 400px;">
             <input type="text" class="form-input" id="table-search-input" placeholder="Buscar por fecha, empresa, planta..." style="width:100%; padding-left:40px; background-color:var(--bg-surface); border:1px solid var(--border-default);">
             <i data-lucide="search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); width:16px; height:16px; pointer-events:none;"></i>
           </div>
+          
+          <!-- Filtros solo en vista General -->
+          ${modo === 'Directo' ?
+            '<div style="flex:0 1 150px;">' +
+            '<select class="form-select" id="table-filter-anio" style="width:100%; background-color:var(--bg-surface); border:1px solid var(--border-default); padding: 8px 12px; border-radius: 6px; height: 42px;">' +
+            '<option value="">Todos los a\u00f1os</option>' +
+            '<option value="2027">2027</option>' +
+            '<option value="2026">2026</option>' +
+            '<option value="2025">2025</option>' +
+            '<option value="2024">2024</option>' +
+            '<option value="2023">2023</option>' +
+            '</select></div>' +
+            '<div style="flex:0 1 150px;">' +
+            '<select class="form-select" id="table-filter-tipo" style="width:100%; background-color:var(--bg-surface); border:1px solid var(--border-default); padding: 8px 12px; border-radius: 6px; height: 42px;">' +
+            '<option value="">Todos los tipos</option>' +
+            '<option value="Directo">Directo</option>' +
+            '<option value="Contratista">Contratista</option>' +
+            '</select></div>'
+          : ''}
+
           <button class="btn btn-secondary" id="btn-exportar-csv" style="display:none; margin-left:auto; flex-shrink:0; white-space:nowrap; align-items:center; gap:6px;">
             <i data-lucide="download" style="width:16px;height:16px;"></i> Exportar CSV
           </button>
@@ -352,6 +372,20 @@ function handleTabChange(container, tabValue) {
     }, 300));
   }
 
+  const tableFilterAnio = container.querySelector('#table-filter-anio');
+  if (tableFilterAnio) {
+    tableFilterAnio.addEventListener('change', () => {
+      refreshTable(container);
+    });
+  }
+
+  const tableFilterTipo = container.querySelector('#table-filter-tipo');
+  if (tableFilterTipo) {
+    tableFilterTipo.addEventListener('change', () => {
+      refreshTable(container);
+    });
+  }
+
   if (btnExportarCsv) {
     btnExportarCsv.addEventListener('click', () => {
       downloadCSV(currentExportData);
@@ -590,73 +624,96 @@ async function refreshTable(container, forceFetch = false) {
   }
 
   const modo = container._currentModo || 'Directo';
+  const MES_ORDEN = { 'Enero': 1, 'Febrero': 2, 'Marzo': 3, 'Abril': 4, 'Mayo': 5, 'Junio': 6, 'Julio': 7, 'Agosto': 8, 'Septiembre': 9, 'Octubre': 10, 'Noviembre': 11, 'Diciembre': 12 };
 
-  // Filter out by modo
-  let filteredRecords = cachedRegistros.filter(r => r.tipo === modo).map(r => {
-    const indicators = calcularTodosLosIndicadores(r);
-    return { ...r, ...indicators };
-  });
-
-  // Filter based on search query
-  const searchInput = container.querySelector('#table-search-input');
-  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-  if (query) {
-    filteredRecords = filteredRecords.filter(r => {
-      const anioStr = String(r.anio || '').toLowerCase();
-      const mesStr = String(r.mes || '').toLowerCase();
-      const plantaStr = String(r.planta || '').toLowerCase();
-      const empresaStr = String(r.empresa || '').toLowerCase();
-      const tipoStr = String(r.tipo || '').toLowerCase();
-      const dateCombined = `${mesStr} ${anioStr}`;
-      return anioStr.includes(query) ||
-             mesStr.includes(query) ||
-             plantaStr.includes(query) ||
-             empresaStr.includes(query) ||
-             tipoStr.includes(query) ||
-             dateCombined.includes(query);
-    });
-  }
-
-  // Save for CSV export (before subtotals)
-  currentExportData = filteredRecords;
-
-  // Calculate overall Acumulado row
-  const sumData = {
-    fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
-    num_trabajadores: 0, fatalidad: 0,
-    dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
-    dias_cargados: 0, casos_eg: 0, incapacidad_eg: 0, casos_el: 0
+  // Helper functions
+  const getTipoWeight = (tipo) => {
+    if (tipo === 'Directo') return 1;
+    return 2;
   };
 
-  filteredRecords.forEach(r => {
-    Object.keys(sumData).forEach(key => {
-      sumData[key] += (Number(r[key]) || 0);
-    });
-  });
+  const injectYearlySubtotals = (records) => {
+    const sorted = [...records].sort((a, b) => {
+      // 1. Year Descending
+      if (b.anio !== a.anio) return b.anio - a.anio;
 
-  const sumIndicators = calcularTodosLosIndicadores(sumData);
-  const footerRow = {
-    anio: 'Acumulado General',
-    mes: '-',
-    tipo: '-',
-    planta: '-',
-    empresa: '-',
-    num_trabajadores: sumData.num_trabajadores,
-    hht: sumData.hht,
-    incidentes_lesiones: sumIndicators.incidentes_lesiones,
-    incidente_tirf: sumIndicators.incidente_tirf,
-    total_incidentes: sumIndicators.total_incidentes,
-    ltif: sumIndicators.ltif,
-    tirf: sumIndicators.tirf,
-    sr: sumIndicators.sr,
-    frecuencia_accidentalidad: sumIndicators.frecuencia_accidentalidad,
-    severidad_accidentalidad: sumIndicators.severidad_accidentalidad,
-    proporcion_mortalidad: sumIndicators.proporcion_mortalidad
+      // 2. Tipo (Directo before Contratista)
+      const wA = getTipoWeight(a.tipo);
+      const wB = getTipoWeight(b.tipo);
+      if (wA !== wB) return wA - wB;
+
+      // 3. Month Descending
+      const mesA = MES_ORDEN[a.mes] ?? 99;
+      const mesB = MES_ORDEN[b.mes] ?? 99;
+      return mesB - mesA;
+    });
+
+    const result = [];
+    let currentYear = null;
+    let currentType = null;
+    let group = [];
+
+    const addYearSubtotal = (yearGroup, year, type) => {
+      if (yearGroup.length === 0) return;
+
+      if (type === 'Contratista (Acum)' || type === 'Contratista') {
+        result.push(...yearGroup);
+        return;
+      }
+
+      const yearSum = {
+        fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
+        num_trabajadores: 0, fatalidad: 0,
+        dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
+        dias_cargados: 0, casos_eg: 0, incapacidad_eg: 0, casos_el: 0
+      };
+
+      yearGroup.forEach(r => {
+        Object.keys(yearSum).forEach(key => {
+          yearSum[key] += (Number(r[key]) || 0);
+        });
+      });
+
+      const monthsCount = yearGroup.length;
+      yearSum.num_trabajadores = monthsCount > 0 ? yearSum.num_trabajadores / monthsCount : 0;
+
+      const indicators = calcularTodosLosIndicadores(yearSum);
+
+      result.push(...yearGroup);
+      result.push({
+        isSubtotal: true,
+        anio: year,
+        mes: 'Acumulado',
+        tipo: type,
+        planta: '-',
+        empresa: 'Acumulado',
+        ...yearSum,
+        ...indicators
+      });
+    };
+
+    sorted.forEach(r => {
+      if (r.anio !== currentYear || r.tipo !== currentType) {
+        if (currentYear !== null && currentType !== null) {
+          addYearSubtotal(group, currentYear, currentType);
+        }
+        group = [r];
+        currentYear = r.anio;
+        currentType = r.tipo;
+      } else {
+        group.push(r);
+      }
+    });
+
+    if (group.length > 0) {
+      addYearSubtotal(group, currentYear, currentType);
+    }
+
+    return result;
   };
 
-  // Helper to calculate subtotal rows for each Year and Month group
-  const calculateSubtotalRow = (records, anio, mes) => {
-    const groupSum = {
+  const calculateFooterRow = (records, title = 'Acumulado General') => {
+    const sumData = {
       fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
       num_trabajadores: 0, fatalidad: 0,
       dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
@@ -664,124 +721,419 @@ async function refreshTable(container, forceFetch = false) {
     };
 
     records.forEach(r => {
-      Object.keys(groupSum).forEach(key => {
-        groupSum[key] += (Number(r[key]) || 0);
+      Object.keys(sumData).forEach(key => {
+        sumData[key] += (Number(r[key]) || 0);
       });
     });
 
-    const groupIndicators = calcularTodosLosIndicadores(groupSum);
-    
+    const monthsCount = records.length;
+    sumData.num_trabajadores = monthsCount > 0 ? sumData.num_trabajadores / monthsCount : 0;
+
+    const sumIndicators = calcularTodosLosIndicadores(sumData);
     return {
-      isSubtotal: true,
-      anio: anio,
-      mes: mes,
+      anio: title,
+      mes: '-',
       tipo: '-',
       planta: '-',
-      empresa: 'Acumulado',
-      num_trabajadores: groupSum.num_trabajadores,
-      hht: groupSum.hht,
-      ...groupSum,
-      incidentes_lesiones: groupIndicators.incidentes_lesiones,
-      incidente_tirf: groupIndicators.incidente_tirf,
-      total_incidentes: groupIndicators.total_incidentes,
-      ltif: groupIndicators.ltif,
-      tirf: groupIndicators.tirf,
-      sr: groupIndicators.sr,
-      frecuencia_accidentalidad: groupIndicators.frecuencia_accidentalidad,
-      severidad_accidentalidad: groupIndicators.severidad_accidentalidad,
-      proporcion_mortalidad: groupIndicators.proporcion_mortalidad
+      empresa: '-',
+      num_trabajadores: sumData.num_trabajadores,
+      hht: sumData.hht,
+      ...sumData,
+      ...sumIndicators
     };
   };
 
-  // Group filtered records chronologically and inject subtotals
-  // Solo se agrega fila de subtotal cuando hay MÁS DE UN registro en el mismo mes/año
-  // (ej: varias empresas contratistas en el mismo periodo). Un solo registro NO genera subtotal.
-  const recordsWithSubtotals = [];
-  let currentGroup = [];
-  let currentAnio = null;
-  let currentMes = null;
+  const searchInput = container.querySelector('#table-search-input');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  
+  const filterAnioSelect = container.querySelector('#table-filter-anio');
+  const filterTipoSelect = container.querySelector('#table-filter-tipo');
+  const selectedAnio = filterAnioSelect ? filterAnioSelect.value : '';
+  const selectedTipo = filterTipoSelect ? filterTipoSelect.value : '';
 
-  filteredRecords.forEach((r) => {
-    if (r.anio !== currentAnio || r.mes !== currentMes) {
-      if (currentGroup.length > 0) {
-        recordsWithSubtotals.push(...currentGroup);
-        if (currentGroup.length > 1) {
-          recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+  const filterByQuery = (records) => {
+    return records.filter(r => {
+      // Filtrar por Año (exacto)
+      if (selectedAnio && String(r.anio) !== selectedAnio) return false;
+      // Filtrar por Tipo (exacto)
+      if (selectedTipo && String(r.tipo) !== selectedTipo) return false;
+
+      // Filtrar por Búsqueda de texto (parcial)
+      if (query) {
+        const anioStr = String(r.anio || '').toLowerCase();
+        const mesStr = String(r.mes || '').toLowerCase();
+        const plantaStr = String(r.planta || '').toLowerCase();
+        const empresaStr = String(r.empresa || '').toLowerCase();
+        const tipoStr = String(r.tipo || '').toLowerCase();
+        const dateCombined = `${mesStr} ${anioStr}`;
+        const matchQuery = anioStr.includes(query) ||
+               mesStr.includes(query) ||
+               plantaStr.includes(query) ||
+               empresaStr.includes(query) ||
+               tipoStr.includes(query) ||
+               dateCombined.includes(query);
+        if (!matchQuery) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Clear existing data table instance
+  if (dataTableInstance) {
+    dataTableInstance.destroy();
+    dataTableInstance = null;
+  }
+
+  // Column definitions
+  const columns = [];
+  columns.push({ 
+    key: 'mes', 
+    label: 'PERIODO', 
+    format: (v, r) => {
+      if (r.isSubtotal) {
+        if (modo === 'Directo') {
+          return `<strong>Acumulado ${r.tipo} ${r.anio}</strong>`;
+        } else {
+          return `<strong>Acumulado ${r.mes} ${r.anio}</strong>`;
         }
       }
-      currentGroup = [r];
-      currentAnio = r.anio;
-      currentMes = r.mes;
-    } else {
-      currentGroup.push(r);
-    }
+      return `${r.mes} ${r.anio}`;
+    } 
   });
 
-  if (currentGroup.length > 0) {
-    recordsWithSubtotals.push(...currentGroup);
-    if (currentGroup.length > 1) {
-      recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
-    }
+  if (modo === 'Directo') {
+    columns.push({ 
+      key: 'tipo', 
+      label: 'TIPO', 
+      width: '160px',
+      format: (v, r) => {
+        if (r.isSubtotal) {
+          if (r.tipo === 'Contratista') {
+            return `<span style="background: rgba(255, 209, 102, 0.15); color: #b08110; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255, 209, 102, 0.4); display: inline-block;">CONTR. ACUM</span>`;
+          }
+          return `<span style="background: rgba(0, 180, 216, 0.08); color: #00b4d8; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid rgba(0, 180, 216, 0.2); display: inline-block;">DIR. ACUM</span>`;
+        }
+        if (r.isContratistaAcumulado || r.tipo === 'Contratista') {
+          return `<span style="background: rgba(255, 209, 102, 0.2); color: #b08110; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255, 209, 102, 0.4); display: inline-block;">CONTRATISTA</span>`;
+        }
+        return `<span style="background: rgba(0, 180, 216, 0.1); color: #00b4d8; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid rgba(0, 180, 216, 0.2); display: inline-block;">DIRECTO</span>`;
+      }
+    });
   }
 
-  // Columnas actualizadas según requerimientos
-  const columns = [];
-  
-  columns.push({ key: 'mes', label: 'PERIODO', format: (v, r) => `${r.mes} ${r.anio}` });
-  
   if (modo === 'Contratista') {
-      columns.push({ key: 'empresa', label: 'EMPRESA', width: '220px', format: (v) => v || '-' });
+    columns.push({ key: 'empresa', label: 'EMPRESA', width: '220px', format: (v) => v || '-' });
   }
-  // PLANTA está oculto en todas las vistas según la solicitud
-  
+
   columns.push(
     { key: 'num_trabajadores', label: '<span title="Trabajadores">TRAB.</span>' },
     { key: 'hht', label: 'HHT', format: (v) => formatNumber(v, 0) },
     { key: 'incidentes_lesiones', label: '<span title="Incidentes con Lesión">LESIÓN</span>', format: (v) => formatNumber(v, 0) },
     { key: 'incidente_tirf', label: '<span title="Incidentes TIRF">TIRF</span>', format: (v) => formatNumber(v, 0) },
     { key: 'total_incidentes', label: '<span title="Total Incidentes">INC.</span>', format: (v) => formatNumber(v, 0) },
-    { key: 'ltif', label: '<span title="Lost Time Injury Frequency Rate (Tasa de Frecuencia de Lesiones con Tiempo Perdido)">LTIF</span>', format: (v) => formatNumber(v) },
-    { key: 'tirf', label: '<span title="Total Recordable Injury Frequency Rate (Tasa de Frecuencia de Lesiones Totales Registrables)">TIRF</span>', format: (v) => formatNumber(v) },
-    { key: 'sr', label: '<span title="Severity Rate (Tasa de Severidad)">SR</span>', format: (v) => formatNumber(v) },
+    { key: 'ltif', label: '<span title="Lost Time Injury Frequency Rate">LTIF</span>', format: (v) => formatNumber(v) },
+    { key: 'tirf', label: '<span title="Total Recordable Injury Frequency Rate">TIRF</span>', format: (v) => formatNumber(v) },
+    { key: 'sr', label: '<span title="Severity Rate">SR</span>', format: (v) => formatNumber(v) },
     { key: 'frecuencia_accidentalidad', label: '<span title="Frecuencia de Accidentalidad">Frec. Acc.</span>', format: (v) => formatNumber(v) },
     { key: 'severidad_accidentalidad', label: '<span title="Severidad de Accidentalidad">Sev. Acc.</span>', format: (v) => formatNumber(v) },
     { key: 'proporcion_mortalidad', label: '<span title="Proporción de Mortalidad">% Mort.</span>', format: (v) => formatPercent(v) }
   );
 
+  if (modo === 'Directo') {
+    // ----------------------------------------------------
+    // VISTA GENERAL: replica pestaña "Data Directo" del Excel
+    // Estructura por año DESC:
+    //   - Todos los meses de DIRECTO (ASC) + fila Acum año
+    //   - Todos los meses de CONTRATISTA acum/mes (ASC) + fila Acum año
+    // ----------------------------------------------------
+    tableContainer.innerHTML = '';
 
-  // Always recreate the table when switching tabs (columns change)
-  if (dataTableInstance) {
-      dataTableInstance.destroy();
-  }
-  
-  dataTableInstance = createDataTable({
-    containerId: 'table-container',
-    columns,
-    data: recordsWithSubtotals,
-    footerRow,
-    onView: (record) => {
-      loadRecordIntoForm(container, record);
-      setReadOnly(container, true);
-      container._showForm();
-    },
-    onEdit: (record) => {
-      loadRecordIntoForm(container, record);
-      setReadOnly(container, false);
-      container._showForm();
-    },
-    onDelete: async (record) => {
-      const confirmed = await showConfirmModal('Eliminar', `¿Seguro que desea eliminar el registro de ${record.mes} ${record.anio}?`);
-      if (confirmed) {
-        const delRes = await deleteRegistro(record.id);
-        if (delRes.error) showToast('Error al eliminar', 'error');
-        else {
-          showToast('Registro eliminado', 'success');
-          await refreshTable(container, true);
-        }
+    // --- 1. Registros DIRECTO ---
+    const directoAll = cachedRegistros
+      .filter(r => r.tipo === 'Directo')
+      .map(r => ({ ...r, ...calcularTodosLosIndicadores(r) }));
+
+    // --- 2. Registros CONTRATISTA: sumar por año+mes (de la pantalla Contratistas) ---
+    const contratistaAll = cachedRegistros.filter(r => r.tipo === 'Contratista');
+    const contratistaByYearMonth = {}; // key: "anio-mes"
+
+    contratistaAll.forEach(r => {
+      const key = `${r.anio}__${r.mes}`;
+      if (!contratistaByYearMonth[key]) {
+        contratistaByYearMonth[key] = {
+          isContratistaAcumulado: true,
+          readonlyAction: true,
+          anio: r.anio,
+          mes: r.mes,
+          tipo: 'Contratista',
+          planta: '-',
+          empresa: 'Acumulado',
+          num_trabajadores: 0, hht: 0, dp: 0, nm: 0, fai: 0, mti: 0,
+          mwd: 0, lti: 0, fatalidad: 0,
+          dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
+          dias_cargados: 0, casos_eg: 0, incapacidad_eg: 0, casos_el: 0
+        };
       }
-    },
-    emptyMessage: 'No hay registros guardados.'
-  });
+      const g = contratistaByYearMonth[key];
+      ['num_trabajadores','hht','dp','nm','fai','mti','mwd','lti','fatalidad',
+       'dias_incapacidad_at_elementia','dias_incapacidad_at_ley','dias_cargados',
+       'casos_eg','incapacidad_eg','casos_el'].forEach(f => {
+        g[f] += (Number(r[f]) || 0);
+      });
+    });
+
+    // Calcular indicadores de cada fila Contratista mensual acumulada
+    const contratistaMonthlyRows = Object.values(contratistaByYearMonth).map(g => ({
+      ...g,
+      ...calcularTodosLosIndicadores(g)
+    }));
+
+    // --- 3. Obtener todos los años presentes en ambos ---
+    const allYears = [...new Set([
+      ...directoAll.map(r => r.anio),
+      ...contratistaMonthlyRows.map(r => r.anio)
+    ])].sort((a, b) => b - a); // DESC
+
+    // Helper: suma anual de un array de filas
+    const sumRowsForYear = (rows, year, tipo) => {
+      const filtered = rows.filter(r => r.anio === year);
+      if (filtered.length === 0) return null;
+      const sum = {
+        fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
+        num_trabajadores: 0, fatalidad: 0,
+        dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
+        dias_cargados: 0, casos_eg: 0, incapacidad_eg: 0, casos_el: 0
+      };
+      filtered.forEach(r => {
+        Object.keys(sum).forEach(k => { sum[k] += (Number(r[k]) || 0); });
+      });
+      // Promedio trabajadores
+      sum.num_trabajadores = filtered.length > 0 ? sum.num_trabajadores / filtered.length : 0;
+      const indicators = calcularTodosLosIndicadores(sum);
+      return {
+        isSubtotal: true,
+        isContratistaAcumulado: tipo === 'Contratista',
+        readonlyAction: true,
+        anio: year,
+        mes: 'Acumulado',
+        tipo: tipo,
+        planta: '-',
+        empresa: 'Acumulado',
+        ...sum,
+        ...indicators
+      };
+    };
+
+    // --- 4. Construir filas finales ordenadas ---
+    const finalRows = [];
+
+    allYears.forEach(year => {
+      // --- Bloque DIRECTO del año ---
+      const directoYear = directoAll
+        .filter(r => r.anio === year)
+        .sort((a, b) => (MES_ORDEN[a.mes] ?? 99) - (MES_ORDEN[b.mes] ?? 99));
+
+      if (directoYear.length > 0) {
+        finalRows.push(...directoYear);
+        const acumDirecto = sumRowsForYear(directoAll, year, 'Directo');
+        if (acumDirecto) finalRows.push(acumDirecto);
+      }
+
+      // --- Bloque CONTRATISTA del año (acumulado mensual) ---
+      const contratistaYear = contratistaMonthlyRows
+        .filter(r => r.anio === year)
+        .sort((a, b) => (MES_ORDEN[a.mes] ?? 99) - (MES_ORDEN[b.mes] ?? 99));
+
+      if (contratistaYear.length > 0) {
+        finalRows.push(...contratistaYear);
+        const acumContratista = sumRowsForYear(contratistaMonthlyRows, year, 'Contratista');
+        if (acumContratista) finalRows.push(acumContratista);
+      }
+    });
+
+    // --- 5. Aplicar filtros de búsqueda/año/tipo ---
+    const baseForFilter = [
+      ...directoAll,
+      ...contratistaMonthlyRows
+    ];
+    const filteredBase = filterByQuery(baseForFilter);
+
+    // Si hay filtros activos, reconstruir solo con las filas filtradas
+    let displayRows = finalRows;
+    if (selectedAnio || selectedTipo || query) {
+      const allowedKeys = new Set(filteredBase.map(r =>
+        r.isContratistaAcumulado
+          ? `C__${r.anio}__${r.mes}`
+          : `D__${r.id}`
+      ));
+      displayRows = finalRows.filter(r => {
+        if (r.isSubtotal) return true; // keep subtotals
+        const key = r.isContratistaAcumulado
+          ? `C__${r.anio}__${r.mes}`
+          : `D__${r.id}`;
+        return allowedKeys.has(key);
+      });
+    }
+
+    // Footer row
+    const footerRow = calculateFooterRow(filteredBase, 'Acumulado General');
+    currentExportData = filteredBase;
+
+    // --- 6. Renderizar ---
+    dataTableInstance = createDataTable({
+      containerId: 'table-container',
+      columns,
+      data: displayRows,
+      footerRow,
+      onView: (record) => {
+        if (record.isContratistaAcumulado || record.isSubtotal) return;
+        loadRecordIntoForm(container, record);
+        setReadOnly(container, true);
+        container._showForm();
+      },
+      onEdit: (record) => {
+        if (record.isContratistaAcumulado || record.isSubtotal || record.tipo !== 'Directo') {
+          showToast('No se puede editar un registro de contratistas desde esta vista', 'warning');
+          return;
+        }
+        loadRecordIntoForm(container, record);
+        setReadOnly(container, false);
+        container._showForm();
+      },
+      onDelete: async (record) => {
+        if (record.isContratistaAcumulado || record.isSubtotal || record.tipo !== 'Directo') {
+          showToast('No se puede eliminar un registro de contratistas desde esta vista', 'warning');
+          return;
+        }
+        const confirmed = await showConfirmModal('Eliminar', `\u00bfSeguro que desea eliminar el registro de ${record.mes} ${record.anio}?`);
+        if (confirmed) {
+          const delRes = await deleteRegistro(record.id);
+          if (delRes.error) showToast('Error al eliminar', 'error');
+          else {
+            showToast('Registro eliminado', 'success');
+            await refreshTable(container, true);
+          }
+        }
+      },
+      emptyMessage: 'No hay registros guardados.'
+    });
+
+  } else {
+    // ----------------------------------------------------
+    // VISTA CONTRATISTAS DETALLADA
+    // ----------------------------------------------------
+    tableContainer.innerHTML = '';
+
+    const contratistasBase = cachedRegistros.filter(r => r.tipo === 'Contratista').map(r => ({
+      ...r,
+      ...calcularTodosLosIndicadores(r)
+    }));
+
+    const contratistasFiltered = filterByQuery(contratistasBase);
+
+    // Save for CSV export
+    currentExportData = contratistasFiltered;
+
+    // Sorting for detailed view (Year DESC, Month DESC, then Company Name)
+    contratistasFiltered.sort((a, b) => {
+      if (b.anio !== a.anio) return b.anio - a.anio;
+      const mesA = MES_ORDEN[a.mes] ?? 99;
+      const mesB = MES_ORDEN[b.mes] ?? 99;
+      if (mesB !== mesA) return mesB - mesA; // Newer months first
+      return (a.empresa || '').localeCompare(b.empresa || '');
+    });
+
+    // Subtotal monthly helper
+    const calculateSubtotalRow = (records, anio, mes) => {
+      const groupSum = {
+        fai: 0, mti: 0, mwd: 0, lti: 0, dp: 0, nm: 0, hht: 0,
+        num_trabajadores: 0, fatalidad: 0,
+        dias_incapacidad_at_elementia: 0, dias_incapacidad_at_ley: 0,
+        dias_cargados: 0, casos_eg: 0, incapacidad_eg: 0, casos_el: 0
+      };
+
+      records.forEach(r => {
+        Object.keys(groupSum).forEach(key => {
+          groupSum[key] += (Number(r[key]) || 0);
+        });
+      });
+
+      const groupIndicators = calcularTodosLosIndicadores(groupSum);
+      
+      return {
+        isSubtotal: true,
+        anio: anio,
+        mes: mes,
+        tipo: '-',
+        planta: '-',
+        empresa: 'Acumulado',
+        num_trabajadores: groupSum.num_trabajadores,
+        hht: groupSum.hht,
+        ...groupSum,
+        ...groupIndicators
+      };
+    };
+
+    const recordsWithSubtotals = [];
+    let currentGroup = [];
+    let currentAnio = null;
+    let currentMes = null;
+
+    contratistasFiltered.forEach((r) => {
+      if (r.anio !== currentAnio || r.mes !== currentMes) {
+        if (currentGroup.length > 0) {
+          recordsWithSubtotals.push(...currentGroup);
+          if (currentGroup.length > 1) {
+            recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+          }
+        }
+        currentGroup = [r];
+        currentAnio = r.anio;
+        currentMes = r.mes;
+      } else {
+        currentGroup.push(r);
+      }
+    });
+
+    if (currentGroup.length > 0) {
+      recordsWithSubtotals.push(...currentGroup);
+      if (currentGroup.length > 1) {
+        recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
+      }
+    }
+
+    const footerRow = calculateFooterRow(contratistasFiltered, 'Acumulado General Contratistas');
+
+    dataTableInstance = createDataTable({
+      containerId: 'table-container',
+      columns,
+      data: recordsWithSubtotals,
+      footerRow,
+      onView: (record) => {
+        loadRecordIntoForm(container, record);
+        setReadOnly(container, true);
+        container._showForm();
+      },
+      onEdit: (record) => {
+        loadRecordIntoForm(container, record);
+        setReadOnly(container, false);
+        container._showForm();
+      },
+      onDelete: async (record) => {
+        const confirmed = await showConfirmModal('Eliminar', `¿Seguro que desea eliminar el registro de ${record.mes} ${record.anio}?`);
+        if (confirmed) {
+          const delRes = await deleteRegistro(record.id);
+          if (delRes.error) showToast('Error al eliminar', 'error');
+          else {
+            showToast('Registro eliminado', 'success');
+            await refreshTable(container, true);
+          }
+        }
+      },
+      emptyMessage: 'No hay registros guardados para contratistas.'
+    });
+  }
 }
 
 function setReadOnly(container, isReadOnly) {

@@ -171,7 +171,7 @@ export function createDataTable({
                     text-align: center;
                     border-bottom: ${isSubtotal ? '2px solid var(--border-default)' : '1px solid var(--border-light)'};
                 ">
-                    ${isSubtotal ? '' : `
+                    ${(isSubtotal || row.readonlyAction) ? '' : `
                     <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
                         ${onView ? `<button class="dt-view-btn" data-global-idx="${globalIdx}" title="Ver todos los datos" style="
                             background: var(--accent-bg);
@@ -211,12 +211,17 @@ export function createDataTable({
                 </td>
             ` : '';
 
-            const rowStyle = isSubtotal 
+            let rowStyle = isSubtotal 
                 ? 'background-color: rgba(148, 163, 184, 0.08); font-weight: bold;' 
                 : 'transition: background 200ms;';
+                
+            if (row.isContratistaAcumulado) {
+                rowStyle += ' background-color: rgba(255, 209, 102, 0.15);';
+            }
+                
             const mouseEvents = isSubtotal 
                 ? '' 
-                : 'onmouseenter="this.style.background=\'var(--bg-hover)\'" onmouseleave="this.style.background=\'transparent\'"';
+                : 'onmouseenter="this.style.background=\'var(--bg-hover)\'" onmouseleave="this.style.background=\'\'"';
                 
             return `<tr style="${rowStyle}" ${mouseEvents}>${cells}${actions}</tr>`;
         }).join('');
