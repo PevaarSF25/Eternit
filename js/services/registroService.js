@@ -80,17 +80,46 @@ function applyFilters(query, filters = {}) {
 export async function getAllRegistros(filters = {}) {
     try {
         const sb = getSupabase();
-        let query = sb.from(TABLA).select('*');
-        query = applyFilters(query, filters);
+        let allData = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        let totalCount = 0;
 
-        const { data, error } = await query;
+        while (hasMore) {
+            let query = sb.from(TABLA).select('*', { count: 'exact' });
+            query = applyFilters(query, filters);
+            query = query.range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (error) {
-            console.error('[registroService] getAllRegistros error:', error);
-            return { data: null, error };
+            const { data, error, count } = await query;
+
+            if (error) {
+                console.error('[registroService] getAllRegistros error en lote:', error);
+                return { data: null, error };
+            }
+
+            totalCount = count || 0;
+
+            if (!data || data.length === 0) {
+                hasMore = false;
+            } else {
+                allData = allData.concat(data);
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    page++;
+                }
+            }
         }
 
-        return { data: ordenarRegistros(data), error: null };
+        console.log(`[registroService] getAllRegistros: ${allData.length} de ${totalCount} registros cargados`);
+        const byTipo = allData.reduce((acc, r) => {
+            acc[r.tipo] = (acc[r.tipo] || 0) + 1;
+            return acc;
+        }, {});
+        console.log('[registroService] Registros por tipo:', byTipo);
+
+        return { data: ordenarRegistros(allData), error: null };
     } catch (err) {
         console.error('[registroService] getAllRegistros excepción:', err);
         return { data: null, error: err };
@@ -246,18 +275,8 @@ export async function deleteRegistro(id) {
  */
 export async function getRegistrosParaDashboard(filters = {}) {
     try {
-        const sb = getSupabase();
-        let query = sb.from(TABLA).select('*');
-        query = applyFilters(query, filters);
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error('[registroService] getRegistrosParaDashboard error:', error);
-            return { data: null, error };
-        }
-
-        return { data: ordenarRegistros(data), error: null };
+        // Reuse our paginated getAllRegistros function
+        return await getAllRegistros(filters);
     } catch (err) {
         console.error('[registroService] getRegistrosParaDashboard excepción:', err);
         return { data: null, error: err };
@@ -277,17 +296,36 @@ export async function getRegistrosParaDashboard(filters = {}) {
 export async function getAniosDisponibles() {
     try {
         const sb = getSupabase();
-        const { data, error } = await sb
-            .from(TABLA)
-            .select('anio');
+        let allData = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
 
-        if (error) {
-            console.error('[registroService] getAniosDisponibles error:', error);
-            return { data: null, error };
+        while (hasMore) {
+            let query = sb.from(TABLA).select('anio');
+            query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+            
+            const { data, error } = await query;
+
+            if (error) {
+                console.error('[registroService] getAniosDisponibles error en lote:', error);
+                return { data: null, error };
+            }
+
+            if (!data || data.length === 0) {
+                hasMore = false;
+            } else {
+                allData = allData.concat(data);
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    page++;
+                }
+            }
         }
 
         // Extraer valores únicos y ordenar descendente
-        const aniosUnicos = [...new Set(data.map(r => r.anio))].sort((a, b) => b - a);
+        const aniosUnicos = [...new Set(allData.map(r => r.anio))].sort((a, b) => b - a);
         return { data: aniosUnicos, error: null };
     } catch (err) {
         console.error('[registroService] getAniosDisponibles excepción:', err);

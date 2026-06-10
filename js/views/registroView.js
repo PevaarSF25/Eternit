@@ -855,17 +855,49 @@ async function refreshTable(container, forceFetch = false) {
       .map(r => ({ ...r, ...calcularTodosLosIndicadores(r) }));
 
     // --- 2. Registros CONTRATISTA: sumar por año+mes (de la pantalla Contratistas) ---
-    const contratistaAll = cachedRegistros.filter(r => r.tipo === 'Contratista');
-    const contratistaByYearMonth = {}; // key: "anio-mes"
+    // Mapa de meses abreviados → nombre completo (por si los datos históricos vienen abreviados)
+    const MES_NORMALIZE = {
+      'Ene': 'Enero',   'Jan': 'Enero',
+      'Feb': 'Febrero',
+      'Mar': 'Marzo',
+      'Abr': 'Abril',   'Apr': 'Abril',
+      'May': 'Mayo',
+      'Jun': 'Junio',
+      'Jul': 'Julio',
+      'Ago': 'Agosto',  'Aug': 'Agosto',
+      'Sep': 'Septiembre', 'Sept': 'Septiembre',
+      'Oct': 'Octubre',
+      'Nov': 'Noviembre',
+      'Dic': 'Diciembre', 'Dec': 'Diciembre'
+    };
+
+    const normalizeMes = (mes) => MES_NORMALIZE[mes] || mes;
+
+    // Filtrar solo registros de tipo Contratista con mes real (excluir 'Acum' o nulos)
+    const MESES_VALIDOS = new Set([
+      'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+      'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
+      // También abreviados por si acaso
+      'Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Sept','Oct','Nov','Dic'
+    ]);
+
+    const contratistaAll = cachedRegistros.filter(r =>
+      r.tipo === 'Contratista' &&
+      r.mes &&
+      MESES_VALIDOS.has(r.mes) // excluye 'Acum', null, undefined, etc.
+    );
+
+    const contratistaByYearMonth = {}; // key: "anio__mesCompleto"
 
     contratistaAll.forEach(r => {
-      const key = `${r.anio}__${r.mes}`;
+      const mesNorm = normalizeMes(r.mes); // siempre nombre completo
+      const key = `${r.anio}__${mesNorm}`;
       if (!contratistaByYearMonth[key]) {
         contratistaByYearMonth[key] = {
           isContratistaAcumulado: true,
           readonlyAction: true,
           anio: r.anio,
-          mes: r.mes,
+          mes: mesNorm, // guardamos el nombre completo
           tipo: 'Contratista',
           planta: '-',
           empresa: 'Acumulado',
@@ -1084,7 +1116,7 @@ async function refreshTable(container, forceFetch = false) {
       if (r.anio !== currentAnio || r.mes !== currentMes) {
         if (currentGroup.length > 0) {
           recordsWithSubtotals.push(...currentGroup);
-          if (currentGroup.length > 1) {
+          if (currentGroup.length >= 1) {
             recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
           }
         }
@@ -1098,7 +1130,7 @@ async function refreshTable(container, forceFetch = false) {
 
     if (currentGroup.length > 0) {
       recordsWithSubtotals.push(...currentGroup);
-      if (currentGroup.length > 1) {
+      if (currentGroup.length >= 1) {
         recordsWithSubtotals.push(calculateSubtotalRow(currentGroup, currentAnio, currentMes));
       }
     }
