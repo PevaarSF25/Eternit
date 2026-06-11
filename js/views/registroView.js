@@ -118,11 +118,6 @@ export async function renderRegistro(container, modo = 'Directo') {
             '<div style="flex:0 1 150px;">' +
             '<select class="form-select" id="table-filter-anio" style="width:100%; background-color:var(--bg-surface); border:1px solid var(--border-default); padding: 8px 12px; border-radius: 6px; height: 42px;">' +
             '<option value="">Todos los a\u00f1os</option>' +
-            '<option value="2027">2027</option>' +
-            '<option value="2026">2026</option>' +
-            '<option value="2025">2025</option>' +
-            '<option value="2024">2024</option>' +
-            '<option value="2023">2023</option>' +
             '</select></div>' +
             '<div style="flex:0 1 150px;">' +
             '<select class="form-select" id="table-filter-tipo" style="width:100%; background-color:var(--bg-surface); border:1px solid var(--border-default); padding: 8px 12px; border-radius: 6px; height: 42px;">' +
@@ -623,6 +618,15 @@ async function refreshTable(container, forceFetch = false) {
     cachedRegistros = res.data || [];
   }
 
+  // Poblar dinámicamente el filtro de años
+  const filterAnioSelect = container.querySelector('#table-filter-anio');
+  if (filterAnioSelect) {
+    const prevValue = filterAnioSelect.value;
+    const yearsInData = [...new Set(cachedRegistros.map(r => r.anio).filter(a => a != null))].sort((a, b) => b - a);
+    filterAnioSelect.innerHTML = '<option value="">Todos los años</option>' +
+      yearsInData.map(y => `<option value="${y}"${String(y) === prevValue ? ' selected' : ''}>${y}</option>`).join('');
+  }
+
   const modo = container._currentModo || 'Directo';
   const MES_ORDEN = { 'Enero': 1, 'Febrero': 2, 'Marzo': 3, 'Abril': 4, 'Mayo': 5, 'Junio': 6, 'Julio': 7, 'Agosto': 8, 'Septiembre': 9, 'Octubre': 10, 'Noviembre': 11, 'Diciembre': 12 };
 
@@ -746,7 +750,6 @@ async function refreshTable(container, forceFetch = false) {
   const searchInput = container.querySelector('#table-search-input');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
   
-  const filterAnioSelect = container.querySelector('#table-filter-anio');
   const filterTipoSelect = container.querySelector('#table-filter-tipo');
   const selectedAnio = filterAnioSelect ? filterAnioSelect.value : '';
   const selectedTipo = filterTipoSelect ? filterTipoSelect.value : '';
@@ -991,20 +994,42 @@ async function refreshTable(container, forceFetch = false) {
     ];
     const filteredBase = filterByQuery(baseForFilter);
 
-    // Si hay filtros activos, reconstruir solo con las filas filtradas
+    // Si hay filtros activos, reconstruir filas CON subtotales recalculados
     let displayRows = finalRows;
     if (selectedAnio || selectedTipo || query) {
-      const allowedKeys = new Set(filteredBase.map(r =>
-        r.isContratistaAcumulado
-          ? `C__${r.anio}__${r.mes}`
-          : `D__${r.id}`
-      ));
-      displayRows = finalRows.filter(r => {
-        if (r.isSubtotal) return true; // keep subtotals
-        const key = r.isContratistaAcumulado
-          ? `C__${r.anio}__${r.mes}`
-          : `D__${r.id}`;
-        return allowedKeys.has(key);
+      // Separar registros filtrados por tipo
+      const filteredDirecto = filteredBase.filter(r => !r.isContratistaAcumulado);
+      const filteredContratista = filteredBase.filter(r => r.isContratistaAcumulado);
+
+      // Obtener años presentes en los datos filtrados
+      const filteredYears = [...new Set([
+        ...filteredDirecto.map(r => r.anio),
+        ...filteredContratista.map(r => r.anio)
+      ])].sort((a, b) => b - a);
+
+      displayRows = [];
+      filteredYears.forEach(year => {
+        // Bloque DIRECTO filtrado del año
+        const directoYear = filteredDirecto
+          .filter(r => r.anio === year)
+          .sort((a, b) => (MES_ORDEN[a.mes] ?? 99) - (MES_ORDEN[b.mes] ?? 99));
+
+        if (directoYear.length > 0) {
+          displayRows.push(...directoYear);
+          const acumDirecto = sumRowsForYear(filteredDirecto, year, 'Directo');
+          if (acumDirecto) displayRows.push(acumDirecto);
+        }
+
+        // Bloque CONTRATISTA filtrado del año
+        const contratistaYear = filteredContratista
+          .filter(r => r.anio === year)
+          .sort((a, b) => (MES_ORDEN[a.mes] ?? 99) - (MES_ORDEN[b.mes] ?? 99));
+
+        if (contratistaYear.length > 0) {
+          displayRows.push(...contratistaYear);
+          const acumContratista = sumRowsForYear(filteredContratista, year, 'Contratista');
+          if (acumContratista) displayRows.push(acumContratista);
+        }
       });
     }
 
