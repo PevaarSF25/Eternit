@@ -12,7 +12,7 @@ const MESES_COMPLETOS = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-export function initDatePicker(inputElement, onChangeCallback) {
+export function initDatePicker(inputElement, onChangeCallback, format = 'YYYY-MM') {
     if (!inputElement) return;
 
     // Make read-only so typing doesn't interfere
@@ -25,17 +25,19 @@ export function initDatePicker(inputElement, onChangeCallback) {
         const fieldset = inputElement.closest('fieldset');
         if (fieldset && fieldset.disabled) return;
 
-        openDatePicker(inputElement, onChangeCallback);
+        openDatePicker(inputElement, onChangeCallback, format);
     });
 }
 
-function openDatePicker(inputElement, onChangeCallback) {
+function openDatePicker(inputElement, onChangeCallback, format = 'YYYY-MM') {
     // Determine initial date
     let initialDate = new Date();
     if (inputElement.value) {
-        const [year, month] = inputElement.value.split('-');
-        if (year && month) {
-            initialDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
+        const parts = inputElement.value.split('-');
+        if (format === 'YYYY-MM-DD' && parts.length === 3) {
+            initialDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        } else if (parts.length >= 2) {
+            initialDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
         }
     }
 
@@ -375,7 +377,13 @@ function openDatePicker(inputElement, onChangeCallback) {
         });
         okBtn.addEventListener('click', () => {
             const formattedMonth = (selectedMonth + 1).toString().padStart(2, '0');
-            const resultVal = `${selectedYear}-${formattedMonth}`;
+            let resultVal;
+            if (format === 'YYYY-MM-DD') {
+                const formattedDay = selectedDay.toString().padStart(2, '0');
+                resultVal = `${selectedYear}-${formattedMonth}-${formattedDay}`;
+            } else {
+                resultVal = `${selectedYear}-${formattedMonth}`;
+            }
             inputElement.value = resultVal;
             
             // Dispatch input event to notify listeners

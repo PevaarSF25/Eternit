@@ -14,12 +14,28 @@ const MENU_ITEMS = [
         ]
     },
     { 
-        label: 'Registro', 
+        label: 'Estadísticas', 
         icon: 'clipboard-list', 
         isCollapse: true,
         children: [
             { label: 'General', hash: '#registro-general' },
             { label: 'Contratistas', hash: '#registro-contratistas' }
+        ]
+    },
+    { 
+        label: 'Inspección', 
+        icon: 'shield-check', 
+        isCollapse: true,
+        children: [
+            { label: 'Inspección Extintores', hash: '#inspeccion-extintores' }
+        ]
+    },
+    {
+        label: 'Equipos',
+        icon: 'package',
+        isCollapse: true,
+        children: [
+            { label: 'Inventario de Extintores', hash: '#inventario-extintores' }
         ]
     }
 ];

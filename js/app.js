@@ -5,11 +5,15 @@ import { initHeader, updateHeader } from './components/header.js';
 const routes = {
   '#registro-general': {
     loadView: () => import('./views/registroView.js').then(m => c => m.renderRegistro(c, 'Directo')),
-    title: 'Registro de Datos (General)'
+    title: 'Estadísticas (General)'
   },
   '#registro-contratistas': {
     loadView: () => import('./views/registroView.js').then(m => c => m.renderRegistro(c, 'Contratista')),
-    title: 'Registro de Datos (Contratistas)'
+    title: 'Estadísticas (Contratistas)'
+  },
+  '#inspeccion-extintores': {
+    loadView: () => import('./views/inspeccionExtintoresView.js').then(m => m.renderInspeccionExtintores),
+    title: 'Inspección Extintores'
   },
   '#dashboard': {
     loadView: () => import('./views/dashboardView.js').then(m => m.renderDashboard),
@@ -18,6 +22,19 @@ const routes = {
   '#parametricas': {
     loadView: () => import('./views/parametricaView.js').then(m => m.renderParametricas),
     title: 'Configuración Paramétricas'
+  },
+  '#inventario-extintores': {
+    loadView: () => Promise.resolve((container) => {
+      container.innerHTML = `
+        <div class="registro-container">
+          <div class="card" style="padding: 24px;">
+            <h2 style="margin-bottom: 16px;">Inventario de Extintores</h2>
+            <p style="color: var(--text-secondary);">Esta sección se implementará próximamente.</p>
+          </div>
+        </div>
+      `;
+    }),
+    title: 'Inventario de Extintores'
   }
 };
 
