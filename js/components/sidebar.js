@@ -27,7 +27,7 @@ const MENU_ITEMS = [
         icon: 'package',
         isCollapse: true,
         children: [
-            { label: 'Inventario de Extintores', hash: '#inventario-extintores' }
+            { label: 'Inventario Extintores', hash: '#inventario-extintores' }
         ]
     },
     { 

@@ -10,6 +10,7 @@ import {
   updateInspeccion, 
   deleteInspeccion 
 } from '../services/inspeccionExtintoresService.js';
+import { getAllInventario } from '../services/inventarioExtintoresService.js';
 
 let currentRecordId = null;
 let dataTableInstance = null;
@@ -40,7 +41,7 @@ export async function renderInspeccionExtintores(container) {
     container.innerHTML = `
     <div class="registro-container">
       <div class="registro-header" style="display:flex; flex-direction:column; align-items:stretch; gap:var(--space-4); margin-bottom:var(--space-6); width:100%;">
-        <h2>Inspección de Extintores</h2>
+        <h2>Inspección Extintores</h2>
         
         <div style="display:flex; align-items:center; width:100%; gap: 12px; flex-wrap: wrap;">
           <div class="search-wrapper" id="table-search-wrapper" style="position:relative; flex:0 1 400px;">
@@ -146,10 +147,11 @@ export async function renderInspeccionExtintores(container) {
 }
 
 async function loadParametricas(container) {
-    const [ciudades, codigos, ubicaciones] = await Promise.all([
+    const [ciudades, codigos, ubicaciones, inventario] = await Promise.all([
         getParametros('ciudad'),
         getParametros('extintor_codigo'),
-        getParametros('extintor_ubicacion')
+        getParametros('extintor_ubicacion'),
+        getAllInventario()
     ]);
 
     const selectLugar = container.querySelector('#input-lugar_trabajo');
@@ -161,6 +163,7 @@ async function loadParametricas(container) {
     // Guardar para uso en renderizado dinámico
     window._paramExtintorCodigos = codigos.data || [];
     window._paramExtintorUbicaciones = ubicaciones.data || [];
+    window._inventarioExtintores = inventario.data || [];
 }
 
 function bindEvents(container) {
@@ -265,7 +268,10 @@ function getExtintorCardHTML(index, data = {}) {
         <div class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:var(--space-3); margin-bottom:var(--space-4);">
             <div class="form-group">
                 <label class="form-label">Código / #</label>
-                <input type="text" class="form-input" data-field="codigo" value="${data.codigo || ''}" required placeholder="Ej: EXT-01...">
+                <select class="form-select selector-codigo-extintor" data-field="codigo" required>
+                    <option value="" disabled ${!data.codigo ? 'selected' : ''}>Seleccione un extintor...</option>
+                    ${window._inventarioExtintores ? window._inventarioExtintores.map(ext => `<option value="${ext.numero_serie}" ${data.codigo === ext.numero_serie ? 'selected' : ''}>${ext.numero_serie} (${ext.tipo})</option>`).join('') : ''}
+                </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Tipo</label>
@@ -307,9 +313,43 @@ function addExtintorCard(container, data = {}) {
     
     // Insert HTML
     extContainer.insertAdjacentHTML('beforeend', getExtintorCardHTML(index, data));
+    const newCard = extContainer.lastElementChild;
+    
+    // Add logic for auto-complete from inventory
+    const selectorCodigo = newCard.querySelector('.selector-codigo-extintor');
+    if (selectorCodigo) {
+        const handleAutocomplete = () => {
+            const selectedSerie = selectorCodigo.value;
+            const extintor = window._inventarioExtintores?.find(e => e.numero_serie === selectedSerie);
+            
+            const fieldTipo = newCard.querySelector('[data-field="tipo"]');
+            const fieldCapacidad = newCard.querySelector('[data-field="capacidad"]');
+            const fieldUbicacion = newCard.querySelector('[data-field="ubicacion"]');
+            const fieldFechaRecarga = newCard.querySelector('[data-field="fecha_recarga"]');
+            
+            if (extintor) {
+                if(fieldTipo) { fieldTipo.value = extintor.tipo; fieldTipo.disabled = true; fieldTipo.style.backgroundColor = 'var(--bg-body)'; }
+                if(fieldCapacidad) { fieldCapacidad.value = extintor.capacidad; fieldCapacidad.disabled = true; fieldCapacidad.style.backgroundColor = 'var(--bg-body)'; }
+                if(fieldUbicacion) { fieldUbicacion.value = extintor.ubicacion; fieldUbicacion.disabled = true; fieldUbicacion.style.backgroundColor = 'var(--bg-body)'; }
+                if(fieldFechaRecarga) { fieldFechaRecarga.value = extintor.ultima_recarga; fieldFechaRecarga.disabled = true; fieldFechaRecarga.style.backgroundColor = 'var(--bg-body)'; }
+            } else {
+                if(fieldTipo) { fieldTipo.disabled = false; fieldTipo.style.backgroundColor = ''; }
+                if(fieldCapacidad) { fieldCapacidad.disabled = false; fieldCapacidad.style.backgroundColor = ''; }
+                if(fieldUbicacion) { fieldUbicacion.disabled = false; fieldUbicacion.style.backgroundColor = ''; }
+                if(fieldFechaRecarga) { fieldFechaRecarga.disabled = false; fieldFechaRecarga.style.backgroundColor = ''; }
+            }
+        };
+
+        selectorCodigo.addEventListener('change', handleAutocomplete);
+        
+        // Trigger immediately if we loaded existing data
+        if (data.codigo) {
+            handleAutocomplete();
+        }
+    }
     
     // Re-init icons
-    if (window.lucide) window.lucide.createIcons({ nodes: [extContainer.lastElementChild] });
+    if (window.lucide) window.lucide.createIcons({ nodes: [newCard] });
     
     updateExtintoresEmptyState(container);
 }

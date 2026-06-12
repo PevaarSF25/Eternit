@@ -24,16 +24,7 @@ const routes = {
     title: 'Configuración Paramétricas'
   },
   '#inventario-extintores': {
-    loadView: () => Promise.resolve((container) => {
-      container.innerHTML = `
-        <div class="registro-container">
-          <div class="card" style="padding: 24px;">
-            <h2 style="margin-bottom: 16px;">Inventario de Extintores</h2>
-            <p style="color: var(--text-secondary);">Esta sección se implementará próximamente.</p>
-          </div>
-        </div>
-      `;
-    }),
+    loadView: () => import('./views/inventarioExtintoresView.js').then(m => m.renderInventarioExtintores),
     title: 'Inventario de Extintores'
   }
 };
