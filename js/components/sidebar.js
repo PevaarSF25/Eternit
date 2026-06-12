@@ -22,20 +22,20 @@ const MENU_ITEMS = [
             { label: 'Contratistas', hash: '#registro-contratistas' }
         ]
     },
-    { 
-        label: 'Inspección', 
-        icon: 'shield-check', 
-        isCollapse: true,
-        children: [
-            { label: 'Inspección Extintores', hash: '#inspeccion-extintores' }
-        ]
-    },
     {
         label: 'Equipos',
         icon: 'package',
         isCollapse: true,
         children: [
             { label: 'Inventario de Extintores', hash: '#inventario-extintores' }
+        ]
+    },
+    { 
+        label: 'Inspección', 
+        icon: 'shield-check', 
+        isCollapse: true,
+        children: [
+            { label: 'Inspección Extintores', hash: '#inspeccion-extintores' }
         ]
     }
 ];

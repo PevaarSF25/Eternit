@@ -265,14 +265,14 @@ function getExtintorCardHTML(index, data = {}) {
         <div class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:var(--space-3); margin-bottom:var(--space-4);">
             <div class="form-group">
                 <label class="form-label">Código / #</label>
-                <select class="form-select extintor-param-codigo" data-field="codigo" required>
-                    <option value="" disabled ${!data.codigo ? 'selected' : ''}>Seleccione...</option>
-                    ${window._paramExtintorCodigos ? window._paramExtintorCodigos.map(p => `<option value="${p.valor}" ${data.codigo === p.valor ? 'selected' : ''}>${p.valor}</option>`).join('') : ''}
-                </select>
+                <input type="text" class="form-input" data-field="codigo" value="${data.codigo || ''}" required placeholder="Ej: EXT-01...">
             </div>
             <div class="form-group">
                 <label class="form-label">Tipo</label>
-                <input type="text" class="form-input" data-field="tipo" value="${data.tipo || ''}" required placeholder="Ej: ABC, CO2...">
+                <select class="form-select extintor-param-codigo" data-field="tipo" required>
+                    <option value="" disabled ${!data.tipo ? 'selected' : ''}>Seleccione...</option>
+                    ${window._paramExtintorCodigos ? window._paramExtintorCodigos.map(p => `<option value="${p.valor}" ${data.tipo === p.valor ? 'selected' : ''}>${p.valor}</option>`).join('') : ''}
+                </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Capacidad</label>

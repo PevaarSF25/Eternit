@@ -7,8 +7,8 @@ import { getParametros, createParametro, updateParametro, deleteParametro } from
 const categories = [
   { id: 'ciudad', code: 'PAR-001', name: 'Centros de trabajo (Plantas)' },
   { id: 'empresa', code: 'PAR-002', name: 'Empresa' },
-  { id: 'extintor_codigo', code: 'PAR-003', name: 'Código de Extintor' },
-  { id: 'extintor_ubicacion', code: 'PAR-004', name: 'Ubicación del Extintor' }
+  { id: 'extintor_codigo', code: 'PAR-003', name: 'Tipo Extintor' },
+  { id: 'extintor_ubicacion', code: 'PAR-004', name: 'Ubicación' }
 ];
 
 // --- State ---
